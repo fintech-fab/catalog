@@ -1,0 +1,79 @@
+<div ng-controller="modalCategoryEdit" id="modalCategoryEdit">
+	<form novalidate class="form-horizontal" name="modalCategoryEdit" ng-submit="save(category, 'category-save-btn')">
+		<input type="hidden" ng-model="category.token" value="<?php echo csrf_token() ?>" id="category-token">
+		<fieldset>
+			<div class="form-group">
+				<label for="category-name" class="col-lg-2 control-label">Name</label>
+
+				<div class="col-lg-10">
+					<input type="text" class="form-control" ng-model="category.name" id="category-name" />
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="category-category_type_id" class="col-lg-2 control-label">Type</label>
+
+				<div class="col-lg-10">
+					<span class="nullable">
+						<select class="form-control" ng-options="type.id as type.name for type in types" ng-model="category.category_type_id" id="category-category_type_id">
+							<option value="">-- choose type --</option>
+						</select>
+					</span>
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="category-path" class="col-lg-2 control-label">Path</label>
+
+				<div class="col-lg-10">
+					<input type="text" class="form-control" ng-model="category.path" id="category-path" />
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="category-sid" class="col-lg-2 control-label">Sid</label>
+
+				<div class="col-lg-10">
+					<input type="text" class="form-control" ng-model="category.sid" id="category-sid" />
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="category-code" class="col-lg-2 control-label">Code</label>
+
+				<div class="col-lg-10">
+					<input type="text" class="form-control" ng-model="category.code" id="category-code" />
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="category-symlink_id" class="col-lg-2 control-label">Symlink</label>
+
+				<div class="col-lg-10">
+					<div class="col-lg-3">
+						<input type="text" class="form-control" ng-model="category.symlink_id" id="category-symlink_id" />
+					</div>
+					<div class="col-lg-7 form-field-additional">
+						{{ extras.symlink }}
+					</div>
+				</div>
+			</div>
+			<div class="form-group">
+				<label for="category-category_tags" class="col-lg-2 control-label">Tags</label>
+
+				<div class="col-lg-10">
+					<tags-input ng-model="category.category_tags" id="category-category_tags" min-length="2">
+						<auto-complete source="loadTagItems($query)" min-length="2"></auto-complete>
+					</tags-input>
+				</div>
+			</div>
+		</fieldset>
+
+		<div class="form-group">
+			<button class="btn btn-primary pull-right" id="category-save-btn">
+				Save
+			</button>
+			<button class="btn btn-default pull-right" ng-click="$hide()">
+				Close
+			</button>
+		</div>
+
+	</form>
+
+</div>
+

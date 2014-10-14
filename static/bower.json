@@ -1,0 +1,38 @@
+{
+  "name": "ff-cat",
+  "version": "0.0.0",
+  "homepage": "https://github.com/fintech-fab/fintech-fab.ru",
+  "main": [
+    "main.js",
+    "main.css"
+  ],
+  "keywords": [
+    "fintech-fab",
+    "catalog",
+    "laravel"
+  ],
+  "authors": [
+    "mikanoz"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+	  "jquery": "*",
+	  "angular": "*",
+	  "angular-ui-tree": "*",
+	  "bootstrap": "*",
+	  "angular-strap": "*",
+	  "angular-busy": "*",
+	  "ng-tags-input": "*",
+	  "angular-local-storage": "*",
+	  "components-font-awesome": "~4.2.0",
+	  "bootswatch-dist": "3.2.0-yeti"
+  }
+}

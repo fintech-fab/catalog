@@ -1,0 +1,40 @@
+<div class="container" ng-controller="categoryTreeEdit">
+
+	<div class="row">
+		<div class="col-lg-10">
+			<h3>Tree view <a href="" class="btn btn-default btn-xs pull-right" ng-click="collapseAll()">Collapse all</a>
+				<a href="" class="btn btn-default btn-xs pull-right" ng-click="expandAll()">Expand all</a>
+				<a href="" class="btn btn-default btn-xs pull-right" ng-click="expandStorage()">Expand for you</a>
+				<a href="" class="btn btn-default btn-xs btn-warning pull-right" ng-click="addRootItem()">Add root
+					category</a>
+			</h3>
+
+			<div class="clear clearfix"></div>
+
+			<script type="text/ng-template" id="nodes_renderer.html">
+				<div ui-tree-handle class="tree-node tree-node-content" ng-class="{'enabled-false': !node.enabled, 'deleted-true': node.deleted}">
+					<a class="btn btn-xs" data-nodrag ng-click="myToggle(this)"><span class="fa" ng-class="{'fa-chevron-right': collapsed, 'fa-chevron-down': !collapsed}"></span></a>
+					[{{ node.id }}] {{node.title}}
+					<span class="category-type-name" ng-class="{'hide': node.category_type_id == 0}">({{ node.type }})</span>
+					<a class="pull-right btn btn-xs" data-nodrag ng-click="removeConfirm(this)" ng-class="{'disabled': node.deleted}"><span class="fa fa-remove pink"></span></a>
+					<a class="pull-right btn btn-xs" data-nodrag ng-click="showFormEdit(this)"><span class="fa fa-pencil"></span></a>
+					<a class="pull-right btn btn-xs" data-nodrag ng-click="showFormNewItem(this)" ng-class="{'disabled': node.symlink_id != 0}"><span class="fa fa-plus"></span></a>
+					<a class="pull-right btn btn-xs" data-nodrag ng-click="toggleEnabled(this)" data-trigger="hover" data-placement="top" title="{{ node.enabled? 'disable': 'enable' }}" bs-tooltip><span class="fa" ng-class="{'fa-eye': node.enabled, 'fa-eye-slash': !node.enabled}"></span></a>
+					<a class="pull-right btn btn-xs" data-nodrag ng-class="{'hide':node.symlink == 0}" data-placement="top" data-trigger="hover" data-title="{{'[' + node.symlink_id + '] ' + node.symlink}}" bs-tooltip><span class="fa fa-link"></span></a>
+				</div>
+				<ol ui-tree-nodes="" ng-model="node.nodes" ng-class="{hidden: collapsed}">
+					<li ng-repeat="node in node.nodes" ui-tree-node ng-include="'nodes_renderer.html'"></li>
+				</ol>
+			</script>
+			<div ui-tree="treeOptions" id="tree-root">
+				<div cg-busy="loadingOverlay">
+					<ol ui-tree-nodes="" ng-model="data">
+						<li ng-repeat="node in data" ui-tree-node ng-include="'nodes_renderer.html'"></li>
+					</ol>
+				</div>
+			</div>
+		</div>
+
+	</div>
+
+</div>

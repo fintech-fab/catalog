@@ -1,0 +1,23 @@
+<div ng-controller="modalCategoryNew" id="modalCategoryNew">
+	<form novalidate class="form-horizontal" name="modalCategoryNew" ng-submit="save(category, 'category-save-btn')">
+		<input type="hidden" ng-model="category.token" value="<?php echo csrf_token() ?>" id="category-token">
+		<fieldset>
+			<div class="form-group">
+				<label for="category-name" class="col-lg-2 control-label">Name</label>
+
+				<div class="col-lg-10">
+					<input type="text" class="form-control" ng-model="category.name" id="category-name" />
+				</div>
+			</div>
+		</fieldset>
+
+		<div class="form-group">
+			<button class="btn btn-primary pull-right" id="category-save-btn">
+				Save
+			</button>
+		</div>
+
+	</form>
+
+</div>
+
