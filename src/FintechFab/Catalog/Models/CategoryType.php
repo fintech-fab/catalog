@@ -8,7 +8,10 @@ namespace FintechFab\Catalog\Models;
  *
  * @package FintechFab\Catalog\Models
  *
+ * @property integer $id
  * @property string $name
+ * @property string $path
+ * @method static CategoryType wherePath($path)
  */
 class CategoryType extends \Eloquent
 {
@@ -16,4 +19,5 @@ class CategoryType extends \Eloquent
 	public $connection = 'ff-cat';
 	public $table = 'category_types';
 
+	public $cnt = 0;
 } 

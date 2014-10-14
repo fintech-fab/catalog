@@ -447,6 +447,9 @@ class CategoryComponent
 		return $this->type->get(['id', 'name'])->lists('name', 'id');
 	}
 
+	/**
+	 * @return CategoryType[]
+	 */
 	public function types()
 	{
 		return $this->type->get(['id', 'name'])->all();

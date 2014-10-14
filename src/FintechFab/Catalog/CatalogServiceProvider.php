@@ -2,6 +2,7 @@
 
 use App;
 use FintechFab\Catalog\Components\CategoryComponent;
+use FintechFab\Catalog\Components\CategorySiteComponent;
 use FintechFab\Catalog\Controllers\CategoryController;
 use FintechFab\Catalog\Exceptions\CategoryException;
 use Illuminate\Support\ServiceProvider;
@@ -54,9 +55,11 @@ class CatalogServiceProvider extends ServiceProvider
 			);
 		});
 
-		App::bind('ff.category.admin', function()
-		{
+		App::bind('ff.category.admin', function () {
 			return App::make(CategoryComponent::class);
+		});
+		App::bind('ff.category.site', function () {
+			return App::make(CategorySiteComponent::class);
 		});
 	}
 

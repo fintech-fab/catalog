@@ -34,6 +34,16 @@ namespace FintechFab\Catalog\Models;
  * @method static Category find($id)
  * @method static Category first()
  * @method static Category whereCode($code)
+ * @method static Category whereDeleted($boolean)
+ * @method static Category whereEnabled($boolean)
+ * @method static Category notDeleted()
+ * @method static Category deleted()
+ * @method static Category enabled()
+ * @method static Category disabled()
+ * @method static Category tagged($tags)
+ * @method static Category typed($types)
+ * @method static Category orderLeft()
+ * @method static Category parentMargin($category)
  * @method Category newInstance()
  */
 class Category extends \Eloquent
@@ -103,6 +113,139 @@ class Category extends \Eloquent
 	public function sysName()
 	{
 		return '[' . $this->id . '] ' . e($this->name);
+	}
+
+
+	/**
+	 * @param Category         $query
+	 * @param Category|integer $category
+	 *
+	 * @return \FintechFab\Catalog\Models\Category
+	 */
+	public function scopeParentMargin($query, $category)
+	{
+		$category = is_numeric($category)
+			? self::find($category)
+			: $category;
+
+		return $query
+			->where('left', '>', $category->left)
+			->where('left', '<', $category->right);
+
+	}
+
+	/**
+	 * @param Category                                    $query
+	 * @param CategoryTag|CategoryTag[]|integer|integer[] $tags
+	 *
+	 * @return \FintechFab\Catalog\Models\Category
+	 */
+	public function scopeTagged($query, $tags)
+	{
+		$tagIds = [];
+		if (!is_array($tags)) {
+			$tags = [$tags];
+		}
+		foreach ($tags as $tag) {
+			if (!is_numeric($tag)) {
+				$tag = $tag->id;
+			}
+			$tagIds[] = $tag;
+		}
+		$ids = CategoryTagRel::whereIn('category_tag_id', $tagIds)->get()->lists('category_id');
+		if (!$ids) {
+			return $query->where(0, 1);
+		}
+
+		return $query->whereIn('id', $ids);
+	}
+
+	/**
+	 * @param Category                                      $query
+	 * @param CategoryType|CategoryType[]|integer|integer[] $types
+	 *
+	 * @return \FintechFab\Catalog\Models\Category
+	 */
+	public function scopeTyped($query, $types)
+	{
+		$ids = [];
+		if (!is_array($types)) {
+			$types = [$types];
+		}
+		foreach ($types as $type) {
+			if (!is_numeric($type)) {
+				$type = $type->id;
+			}
+			$ids[] = $type;
+		}
+
+		return $query->whereIn('category_type_id', $ids);
+	}
+
+	/**
+	 * @param Category $query
+	 *
+	 * @return \FintechFab\Catalog\Models\Category
+	 */
+	public function scopeNotDeleted($query)
+	{
+		return $query->whereDeleted(0);
+	}
+
+	/**
+	 * @param Category $query
+	 *
+	 * @return \FintechFab\Catalog\Models\Category
+	 */
+	public function scopeDeleted($query)
+	{
+		return $query->whereDeleted(1);
+	}
+
+	/**
+	 * @param Category $query
+	 *
+	 * @return \FintechFab\Catalog\Models\Category
+	 */
+	public function scopeEnabled($query)
+	{
+		return $query->whereEnabled(1);
+	}
+
+	/**
+	 * @param Category $query
+	 *
+	 * @return \FintechFab\Catalog\Models\Category
+	 */
+	public function scopeDisabled($query)
+	{
+		return $query->whereEnabled(0);
+	}
+
+	/**
+	 * @param Category $query
+	 *
+	 * @return \FintechFab\Catalog\Models\Category
+	 */
+	public function scopeOrderLeft($query)
+	{
+		return $query->orderBy('left');
+	}
+
+	/**
+	 * @return string
+	 */
+	public function typeName()
+	{
+		return $this->category_type_id ? $this->type->name : '';
+	}
+
+	/**
+	 * @return string
+	 */
+	public function symlinkName()
+	{
+		return $this->symlink_id ? $this->symlink->name : '';
 	}
 
 }

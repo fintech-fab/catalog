@@ -15,6 +15,8 @@ use FintechFab\Catalog\Helpers\Core;
  * @property string  $path
  *
  * @method static CategoryTag whereName($name)
+ * @method static CategoryTag[] findMany($ids)
+ * @method static CategoryTag wherePath($path)
  */
 class CategoryTag extends \Eloquent
 {
@@ -23,6 +25,8 @@ class CategoryTag extends \Eloquent
 	public $table = 'category_tags';
 	public $fillable = ['name', 'path'];
 	public $timestamps = false;
+
+	public $cnt = 0;
 
 	/**
 	 * @param $name
