@@ -5,6 +5,9 @@ use FintechFab\Catalog\Components\CategoryComponent;
 use FintechFab\Catalog\Components\CategorySiteComponent;
 use FintechFab\Catalog\Controllers\CategoryController;
 use FintechFab\Catalog\Exceptions\CategoryException;
+use FintechFab\Catalog\Facades\CategoryAdmin;
+use FintechFab\Catalog\Facades\CategorySite;
+use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\ServiceProvider;
 use Route;
 use View;
@@ -61,6 +64,11 @@ class CatalogServiceProvider extends ServiceProvider
 		App::bind('ff.category.site', function () {
 			return App::make(CategorySiteComponent::class);
 		});
+
+		AliasLoader::getInstance([
+			'CategoryAdmin' => CategoryAdmin::class,
+			'CategorySite'  => CategorySite::class,
+		]);
 	}
 
 	/**

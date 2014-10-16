@@ -72,7 +72,7 @@ class CategorySiteComponent
 	/**
 	 * @param \FintechFab\Catalog\Models\Category|integer $category
 	 *
-	 * @return CategoryComponent
+	 * @return CategorySiteComponent
 	 */
 	public function init($category)
 	{
@@ -104,16 +104,7 @@ class CategorySiteComponent
 			->notDeleted()
 			->enabled();
 
-		if (!empty($with)) {
-			if (!is_array($with)) {
-				$with = [$with];
-			}
-		}
-
-		foreach ($with as $relName) {
-			$list->with($relName);
-		}
-
+		$list = $this->mergeWith($list, $with);
 		$list = $list->get()->all();
 
 		$this->clearTreeList($list);
@@ -122,11 +113,9 @@ class CategorySiteComponent
 	}
 
 	/**
-	 * @param integer|\FintechFab\Catalog\Models\Category $category
-	 *
 	 * @return array
 	 */
-	public function treeByItem($category)
+	public function treeByItem()
 	{
 
 		/**
@@ -134,9 +123,7 @@ class CategorySiteComponent
 		 * @var Category[] $list
 		 */
 
-		if (!is_object($category)) {
-			$category = $this->category->find($category);
-		}
+		$category = $this->get();
 
 		$list = $this->category
 			->orderLeft()
@@ -198,7 +185,7 @@ class CategorySiteComponent
 
 	/**
 	 * @param \FintechFab\Catalog\Models\CategoryTag[]|\FintechFab\Catalog\Models\CategoryTag|integer[]|integer $tags
-	 * @param array                                       $with
+	 * @param array                                                                                             $with
 	 *
 	 * @return array
 	 */
@@ -213,17 +200,7 @@ class CategorySiteComponent
 			->notDeleted()
 			->enabled()
 			->tagged($tags);
-
-		if (!empty($with)) {
-			if (!is_array($with)) {
-				$with = [$with];
-			}
-		}
-
-		foreach ($with as $relName) {
-			$list->with($relName);
-		}
-
+		$this->mergeWith($list, $with);
 		$list = $list->get()->all();
 
 		return $list;
@@ -231,7 +208,7 @@ class CategorySiteComponent
 
 	/**
 	 * @param \FintechFab\Catalog\Models\CategoryType[]|\FintechFab\Catalog\Models\CategoryType|integer[]|integer $types
-	 * @param array                                         $with
+	 * @param array                                                                                               $with
 	 *
 	 * @return array
 	 */
@@ -247,24 +224,14 @@ class CategorySiteComponent
 			->notDeleted()
 			->enabled()
 			->typed($types);
-
-		if (!empty($with)) {
-			if (!is_array($with)) {
-				$with = [$with];
-			}
-		}
-
-		foreach ($with as $relName) {
-			$list->with($relName);
-		}
-
+		$this->mergeWith($list, $with);
 		$list = $list->get()->all();
 
 		return $list;
 	}
 
 	/**
-	 * @param array    $list
+	 * @param array $list
 	 * @param \FintechFab\Catalog\Models\Category $node
 	 */
 	private function clearTreeList(&$list, $node = null)
@@ -317,16 +284,55 @@ class CategorySiteComponent
 	}
 
 	/**
-	 * @return array
+	 * @param array $with
+	 *
+	 * @return \FintechFab\Catalog\Models\Category[]
 	 */
-	public function parents()
+	public function parents($with = [])
 	{
+
+		$left = $this->get()->left;
+		$right = $this->get()->right;
+
+		$list = $this->category
+			->where('left', '<=', $left)
+			->where('right', '>=', $right)
+			->orderLeft();
+
+		return $this->mergeWith($list, $with)->get()->all();
+
+	}
+
+	/**
+	 * @param array $with
+	 *
+	 * @return \FintechFab\Catalog\Models\Category[]
+	 */
+	public function neighbors($with = [])
+	{
+		$category = $this->get();
+		if (!$category->id) {
+			$level = 0;
+			$parent_id = 0;
+		} else {
+			$level = $category->level;
+			$parent_id = $category->parent_id;
+		}
+
+		$list = $this->category
+			->whereLevel($level)
+			->whereParentId($parent_id)
+			->notDeleted()
+			->enabled()
+			->orderLeft();
+
+		return $this->mergeWith($list, $with)->get()->all();
 
 	}
 
 
 	/**
-	 * @return \FintechFab\Catalog\Models\categoryTag[]
+	 * @return \FintechFab\Catalog\Models\CategoryTag[]
 	 */
 	public function tagList()
 	{
@@ -362,6 +368,31 @@ class CategorySiteComponent
 	public function queryLogDelimiter($str)
 	{
 		$this->queryLog[] = $str;
+	}
+
+
+	/**
+	 * @param \Eloquent $list
+	 * @param array     $with
+	 *
+	 * @return \Eloquent
+	 */
+	private function mergeWith($list, $with)
+	{
+		if (empty($with)) {
+			return $list;
+		}
+
+		if (!is_array($with)) {
+			$with = [$with];
+		}
+
+		foreach ($with as $withName) {
+			$list->with($withName);
+		}
+
+		return $list;
+
 	}
 
 } 

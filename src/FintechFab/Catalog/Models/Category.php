@@ -31,6 +31,7 @@ namespace FintechFab\Catalog\Models;
  *
  * @method static Category whereParentId($parent_id)
  * @method static Category whereSymlinkId($symlink_id)
+ * @method static Category whereLevel($level)
  * @method static Category find($id)
  * @method static Category first()
  * @method static Category whereCode($code)
