@@ -3,10 +3,12 @@
 use App;
 use FintechFab\Catalog\Components\CategoryComponent;
 use FintechFab\Catalog\Components\CategorySiteComponent;
+use FintechFab\Catalog\Components\ProductComponent;
 use FintechFab\Catalog\Controllers\CategoryController;
 use FintechFab\Catalog\Exceptions\CategoryException;
 use FintechFab\Catalog\Facades\CategoryAdmin;
 use FintechFab\Catalog\Facades\CategorySite;
+use FintechFab\Catalog\Facades\ProductAdmin;
 use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\ServiceProvider;
 use Route;
@@ -61,12 +63,16 @@ class CatalogServiceProvider extends ServiceProvider
 		App::bind('ff.category.admin', function () {
 			return App::make(CategoryComponent::class);
 		});
+		App::bind('ff.product.admin', function () {
+			return App::make(ProductComponent::class);
+		});
 		App::bind('ff.category.site', function () {
 			return App::make(CategorySiteComponent::class);
 		});
 
 		AliasLoader::getInstance([
 			'CategoryAdmin' => CategoryAdmin::class,
+			'ProductAdmin' => ProductAdmin::class,
 			'CategorySite'  => CategorySite::class,
 		]);
 	}

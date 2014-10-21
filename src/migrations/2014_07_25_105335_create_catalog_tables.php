@@ -26,6 +26,7 @@ class CreateCatalogTables extends Migration
 			$table->string('code')->default('');
 			$table->string('sid')->default('');
 			$table->string('path')->default('');
+			$table->string('path_full')->default('');
 			$table->unsignedInteger('left')->default(0);
 			$table->unsignedInteger('right')->default(0);
 
@@ -68,28 +69,6 @@ class CreateCatalogTables extends Migration
 
 		});
 
-
-		Schema::connection('ff-cat')->create('products', function (Blueprint $table) {
-
-			$table->increments('id');
-
-			$table->decimal('price')->default('0.00');
-			$table->decimal('brand_id')->default('0.00');
-
-			$table->string('name')->default('');
-			$table->string('code')->default('');
-			$table->string('sid')->default('');
-			$table->string('path')->default('');
-
-			$table->boolean('enabled')->default(0);
-			$table->boolean('deleted')->default(0);
-
-			$table->unsignedInteger('order')->default(0);
-
-			$table->timestamps();
-
-		});
-
 	}
 
 	/**
@@ -103,9 +82,6 @@ class CreateCatalogTables extends Migration
 		Schema::connection('ff-cat')->drop('category_types');
 		Schema::connection('ff-cat')->drop('category_tags');
 		Schema::connection('ff-cat')->drop('category_tag_rel');
-
-
-		Schema::connection('ff-cat')->drop('products');
 	}
 
 }
