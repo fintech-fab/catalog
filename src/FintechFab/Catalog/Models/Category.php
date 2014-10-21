@@ -8,26 +8,28 @@ namespace FintechFab\Catalog\Models;
  *
  * @package FintechFab\Catalog\Models
  *
- * @property integer             $id
- * @property integer             $level
- * @property integer             $order
- * @property integer             $parent_id
- * @property string              $path
- * @property string              $name
- * @property integer             $enabled
- * @property integer             $deleted
- * @property integer             $category_type_id
- * @property integer             $symlink_id
- * @property integer             $left
- * @property integer             $right
- * @property string              $sid
- * @property string              $code
+ * @property integer       $id
+ * @property integer       $level
+ * @property integer       $order
+ * @property integer       $parent_id
+ * @property string        $path
+ * @property string        $path_full
+ * @property string        $name
+ * @property integer       $enabled
+ * @property integer       $deleted
+ * @property integer       $category_type_id
+ * @property integer       $symlink_id
+ * @property integer       $left
+ * @property integer       $right
+ * @property string        $sid
+ * @property string        $code
  *
- * @property Category            $symlink
- * @property Category            $parent
- * @property CategoryType        $type
- * @property Category[]          $descendants
- * @property CategoryTag[]       $tags
+ * @property Category      $symlink
+ * @property Category      $parent
+ * @property Category[]    $children
+ * @property CategoryType  $type
+ * @property Category[]    $descendants
+ * @property CategoryTag[] $tags
  *
  * @method static Category whereParentId($parent_id)
  * @method static Category whereSymlinkId($symlink_id)
@@ -53,7 +55,7 @@ class Category extends \Eloquent
 	public $connection = 'ff-cat';
 	public $table = 'categories';
 
-	public $fillable = ['name', 'path', 'level', 'order', 'parent_id', 'code'];
+	public $fillable = ['name', 'path', 'path_full', 'level', 'order', 'parent_id', 'code'];
 
 	public function type()
 	{
@@ -69,6 +71,11 @@ class Category extends \Eloquent
 	public function parent()
 	{
 		return $this->hasOne(self::class, 'id', 'parent_id');
+	}
+
+	public function children()
+	{
+		return $this->hasMany(self::class, 'parent_id', 'id');
 	}
 
 	public function symlink()
@@ -247,6 +254,21 @@ class Category extends \Eloquent
 	public function symlinkName()
 	{
 		return $this->symlink_id ? $this->symlink->name : '';
+	}
+
+	/**
+	 * rebuild full path for children recursively
+	 */
+	public function setFullPath2Children()
+	{
+		if (0 < count($this->children)) {
+			foreach ($this->children as $item) {
+				$pathFull = trim($this->path_full . '/' . $item->path, '/');
+				$item->path_full = $pathFull;
+				$item->save();
+				$item->setFullPath2Children();
+			}
+		}
 	}
 
 }

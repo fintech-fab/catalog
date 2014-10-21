@@ -41,6 +41,11 @@ class CategoryComponent
 	 */
 	private $validator;
 
+
+	private $createInput = ['name', 'parent_id', 'symlink_id'];
+	private $updateInput = ['parent_id', 'symlink_id', 'category_type_id', 'name', 'code', 'sid', 'path'];
+	private $beforeState;
+
 	public function __construct(
 		Category $category,
 		CategoryType $type,
@@ -61,9 +66,11 @@ class CategoryComponent
 	 */
 	public function create(array $item)
 	{
+		$item = $this->onlyCreateInput($item);
 		$this->prepareRequiredData($item);
 		$item['level'] = $this->calculateLevel($item['parent_id']);
 		$item['order'] = $this->calculateOrder($item['parent_id']);
+		$item['path_full'] = $this->calculatePath($item['parent_id'], $item['path']);
 		$cat = $this->category->newInstance($item);
 		$this->init($cat);
 
@@ -83,17 +90,21 @@ class CategoryComponent
 	public function update(array $item)
 	{
 
-		$this->guardUpdateData($item);
+		$this->onlyUpdateInput($item);
+
 		foreach ($item as $key => $value) {
 			$this->category->$key = $value;
 			$this->category->setAttribute($key, $value);
 		}
 
+		$item['name'] = $this->category->name;
 		if (!$this->validate($item)) {
 			return false;
 		}
 
 		$this->category->save();
+
+		$this->afterUpdate();
 
 		return $this;
 	}
@@ -142,6 +153,30 @@ class CategoryComponent
 
 	}
 
+	private function calculatePath($parent_id, $path)
+	{
+
+		if ($parent_id <= 0) {
+			return $path;
+		}
+
+		/** @var Category $parent */
+		$pathList = [$path];
+		$parent = $this->category->find($parent_id);
+		while (true) {
+			$pathList[] = $parent->path;
+			if (!$parent->parent_id) {
+				break;
+			}
+			$parent = $this->category->find($parent->parent_id);
+		}
+		$pathList = array_reverse($pathList);
+		$pathFull = implode('/', $pathList);
+
+		return $pathFull;
+
+	}
+
 	private function calculateOrder($parent_id)
 	{
 
@@ -170,6 +205,10 @@ class CategoryComponent
 		} else {
 			$this->category = $category;
 		}
+
+		$this->beforeState = ($this->category->id)
+			? $this->category->getAttributes()
+			: null;
 
 		return $this;
 	}
@@ -364,7 +403,6 @@ class CategoryComponent
 	private function validate(array &$item)
 	{
 
-		$this->clearData($item);
 		$this->createSymlinkValidator($item);
 
 		$rules = [
@@ -395,41 +433,6 @@ class CategoryComponent
 	public function topList()
 	{
 		return $this->category->whereParentId(0)->orderBy('order')->get()->all();
-	}
-
-	private function clearData(array &$item)
-	{
-		$clear = [
-			'_token',
-			'category_tags',
-		];
-
-		foreach ($clear as $key) {
-			if (isset($item[$key])) {
-				unset($item[$key]);
-			}
-		}
-
-	}
-
-	private function guardUpdateData(array &$item)
-	{
-		$this->clearData($item);
-
-		$guard = [
-			'parent_id',
-			'level',
-			'order',
-			'enabled',
-			'deleted',
-		];
-
-		foreach ($guard as $key) {
-			if (isset($item[$key])) {
-				unset($item[$key]);
-			}
-		}
-
 	}
 
 	public function toggleEnable()
@@ -645,5 +648,55 @@ class CategoryComponent
 
 		return $extras;
 	}
+
+	private function onlyCreateInput($item)
+	{
+		$keys = array_flip($this->createInput);
+
+		return array_intersect_key($item, $keys);
+	}
+
+	private function onlyUpdateInput($item)
+	{
+		$keys = array_flip($this->updateInput);
+
+		return array_intersect_key($item, $keys);
+	}
+
+
+	private function afterUpdate()
+	{
+		if (!$this->beforeState) {
+			return;
+		}
+
+		if (
+			$this->category->path != $this->beforeState['path']
+		) {
+
+			$this->lock();
+
+			$pathFull = $this->calculatePath($this->category->parent_id, $this->category->path);
+			$this->category->path_full = $pathFull;
+			$this->category->save();
+
+			$this->category->setFullPath2Children();
+
+			$this->unlock();
+		}
+
+	}
+
+
+	private function lock()
+	{
+		$this->category->getConnection()->table($this->category->getTable())->lock();
+	}
+
+	private function unlock()
+	{
+		$this->category->getConnection()->table($this->category->getTable())->lock(false);
+	}
+
 
 }

@@ -63,6 +63,43 @@ class CategoryTest extends \TestCase
 
 	}
 
+	public function testPathFull_1()
+	{
+
+		$parent = $this->createCategory(0, 'раз');
+		$child = $this->createCategory($parent->id, 'два');
+
+		$this->assertEquals('raz/dva', $child->path_full);
+
+	}
+
+	public function testPathFull_2()
+	{
+
+		$one = $this->createCategory(0, 'раз');
+		$two = $this->createCategory($one->id, 'два');
+		$three = $this->createCategory($two->id, 'три');
+		$four = $this->createCategory($three->id, 'четыре');
+
+		$this->assertEquals('raz/dva/tri', $three->path_full);
+
+		$result = CategoryAdmin::init($two)->update([
+			'path' => 'two-edited',
+		]);
+
+		$this->assertNotFalse($result);
+
+		$two = CategoryAdmin::get()->find($two->id);
+		$this->assertEquals('raz/two-edited', $two->path_full);
+
+		$three = CategoryAdmin::get()->find($three->id);
+		$this->assertEquals('raz/two-edited/tri', $three->path_full);
+
+		$four = CategoryAdmin::get()->find($four->id);
+		$this->assertEquals('raz/two-edited/tri/chetire', $four->path_full);
+
+	}
+
 	public function testMove2Parent()
 	{
 
