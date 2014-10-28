@@ -77,6 +77,7 @@ class Products extends Migration
 
 			$table->unsignedInteger('product_id')->default(0);
 			$table->unsignedInteger('category_id')->default(0);
+			$table->unsignedInteger('order')->default(0);
 
 		});
 

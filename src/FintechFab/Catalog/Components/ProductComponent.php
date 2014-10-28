@@ -147,6 +147,14 @@ class ProductComponent
 
 	}
 
+	/**
+	 *
+	 * calculate order for all products
+	 *
+	 * @param $category_id
+	 *
+	 * @return int|mixed
+	 */
 	private function calculateOrder($category_id)
 	{
 
@@ -216,9 +224,137 @@ class ProductComponent
 		$this->product->remove();
 	}
 
+	/**
+	 * list of product types
+	 *
+	 * @return array
+	 */
 	public function typeList()
 	{
 		return $this->type->get(['id', 'name'])->lists('name', 'id');
+	}
+
+	/**
+	 * products by category
+	 *
+	 * @param integer $category_id
+	 *
+	 * @return \FintechFab\Catalog\Models\Product[]
+	 */
+	public function listByCategory($category_id)
+	{
+
+		return $this->categoryRel
+			->where($this->categoryRel->getTable() . '.category_id', $category_id)
+			->leftJoin(
+				$this->product->getTable(), 'id', '=', 'product_id'
+			)
+			->orderBy($this->categoryRel->getTable() . '.order')
+			->get()
+			->all();
+
+	}
+
+	/**
+	 * order product to top position into one category relation
+	 *
+	 * @param integer $category_id
+	 *
+	 * @return ProductComponent
+	 */
+	public function orderCategory2Top($category_id)
+	{
+
+		$currentRel = $this->categoryRel->existing($this->get()->id, $category_id)->first();
+
+		$this->categoryRel
+			->whereCategoryId($currentRel->category_id)
+			->where('order', '<', $currentRel->order)
+			->update([
+				'order' => $this->categoryRel->getConnection()->raw('`order`+1')
+			]);
+
+		$currentRel->setOrder(1);
+
+		return $this;
+
+	}
+
+	/**
+	 * order product to bottom position into one category relation
+	 *
+	 * @param integer $category_id
+	 *
+	 * @return ProductComponent
+	 */
+	public function orderCategory2Bottom($category_id)
+	{
+
+		$currentRel = $this->categoryRel->existing($this->get()->id, $category_id)->first();
+
+		$this->categoryRel
+			->whereCategoryId($currentRel->category_id)
+			->where('order', '>', $currentRel->order)
+			->update([
+				'order' => $this->categoryRel->getConnection()->raw('`order`-1')
+			]);
+
+		$max = $this->categoryRel->maxCategoryOrder($currentRel->category_id);
+		$currentRel->setOrder($max + 1);
+
+		return $this;
+
+	}
+
+	/**
+	 * move product after other product into one category relation
+	 *
+	 * @param integer $category_id
+	 * @param integer $id
+	 *
+	 * @return ProductComponent
+	 */
+	public function moveAfter($category_id, $id)
+	{
+
+		if ($id == 0) {
+			return $this->orderCategory2Top($category_id);
+		}
+
+		$currentRel = $this->categoryRel->existing($this->get()->id, $category_id)->first();
+
+		if ($this->get()->id == $id) {
+			return $this;
+		}
+
+		$afterRel = $this->categoryRel->existing($id, $category_id)->first();
+
+		if ($currentRel->order > $afterRel->order) {
+
+			$this->categoryRel
+				->whereCategoryId($currentRel->category_id)
+				->where('order', '<', $currentRel->order)
+				->where('order', '>', $afterRel->order)
+				->update([
+					'order' => $this->categoryRel->getConnection()->raw('`order`+1')
+				]);
+			$currentRel->setOrder($afterRel->order + 1);
+
+		} else {
+
+			$this->categoryRel
+				->whereCategoryId($currentRel->category_id)
+				->where('order', '>', $currentRel->order)
+				->where('order', '<=', $afterRel->order)
+				->update([
+					'order' => $this->categoryRel->getConnection()->raw('`order`-1')
+				]);
+			$currentRel->setOrder($afterRel->order);
+
+		}
+
+		return $this;
+
 	}
 
 	/**

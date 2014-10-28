@@ -42,6 +42,143 @@ class ProductCategoryTest extends \TestCase
 
 	}
 
+	public function testDefaultSorting()
+	{
+
+		$product1 = $this->createProduct();
+		$product2 = $this->createProduct();
+		$product3 = $this->createProduct();
+
+		$category = $this->createCategory();
+
+		ProductAdmin::init($product2)->add2Category($category->id);
+		ProductAdmin::init($product1)->add2Category($category->id);
+		ProductAdmin::init($product3)->add2Category($category->id);
+
+		$list = ProductAdmin::listByCategory($category->id);
+		$this->assertEquals($product2->id, $list[0]->id);
+		$this->assertEquals($product1->id, $list[1]->id);
+		$this->assertEquals($product3->id, $list[2]->id);
+
+
+		$rel = ProductCategoryRel::existing($product1->id, $category->id)->first();
+		$this->assertEquals(2, $rel->order);
+
+		$rel = ProductCategoryRel::existing($product2->id, $category->id)->first();
+		$this->assertEquals(1, $rel->order);
+
+		$rel = ProductCategoryRel::existing($product3->id, $category->id)->first();
+		$this->assertEquals(3, $rel->order);
+
+	}
+
+	public function testBringToOrderCategory()
+	{
+
+		$product1 = $this->createProduct();
+		$product2 = $this->createProduct();
+		$product3 = $this->createProduct();
+
+		$category = $this->createCategory();
+
+		ProductAdmin::init($product2)->add2Category($category->id);
+		ProductAdmin::init($product1)->add2Category($category->id);
+		ProductAdmin::init($product3)->add2Category($category->id);
+
+		ProductAdmin::init($product3)->orderCategory2Top($category->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product3->id, $list[0]->id);
+		$this->assertEquals($product2->id, $list[1]->id);
+		$this->assertEquals($product1->id, $list[2]->id);
+
+		ProductAdmin::init($product2)->orderCategory2Top($category->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product2->id, $list[0]->id);
+		$this->assertEquals($product3->id, $list[1]->id);
+		$this->assertEquals($product1->id, $list[2]->id);
+
+		ProductAdmin::init($product3)->orderCategory2Bottom($category->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product2->id, $list[0]->id);
+		$this->assertEquals($product1->id, $list[1]->id);
+		$this->assertEquals($product3->id, $list[2]->id);
+
+		ProductAdmin::init($product2)->orderCategory2Bottom($category->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product1->id, $list[0]->id);
+		$this->assertEquals($product3->id, $list[1]->id);
+		$this->assertEquals($product2->id, $list[2]->id);
+
+	}
+
+	public function testBringToOrderCategoryAfter()
+	{
+
+		$product1 = $this->createProduct();
+		$product2 = $this->createProduct();
+		$product3 = $this->createProduct();
+		$product4 = $this->createProduct();
+		$product5 = $this->createProduct();
+
+		$category = $this->createCategory();
+
+		ProductAdmin::init($product1)->add2Category($category->id);
+		ProductAdmin::init($product2)->add2Category($category->id);
+		ProductAdmin::init($product3)->add2Category($category->id);
+		ProductAdmin::init($product4)->add2Category($category->id);
+		ProductAdmin::init($product5)->add2Category($category->id);
+
+		ProductAdmin::init($product3)->moveAfter($category->id, $product3->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product1->id, $list[0]->id);
+		$this->assertEquals($product2->id, $list[1]->id);
+		$this->assertEquals($product3->id, $list[2]->id);
+		$this->assertEquals($product4->id, $list[3]->id);
+		$this->assertEquals($product5->id, $list[4]->id);
+
+		ProductAdmin::init($product2)->moveAfter($category->id, $product5->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product1->id, $list[0]->id);
+		$this->assertEquals($product3->id, $list[1]->id);
+		$this->assertEquals($product4->id, $list[2]->id);
+		$this->assertEquals($product5->id, $list[3]->id);
+		$this->assertEquals($product2->id, $list[4]->id);
+
+		ProductAdmin::init($product3)->moveAfter($category->id, 0);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product3->id, $list[0]->id);
+		$this->assertEquals($product1->id, $list[1]->id);
+		$this->assertEquals($product4->id, $list[2]->id);
+		$this->assertEquals($product5->id, $list[3]->id);
+		$this->assertEquals($product2->id, $list[4]->id);
+
+		ProductAdmin::init($product2)->moveAfter($category->id, $product1->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product3->id, $list[0]->id);
+		$this->assertEquals($product1->id, $list[1]->id);
+		$this->assertEquals($product2->id, $list[2]->id);
+		$this->assertEquals($product4->id, $list[3]->id);
+		$this->assertEquals($product5->id, $list[4]->id);
+
+		ProductAdmin::init($product3)->moveAfter($category->id, $product5->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product1->id, $list[0]->id);
+		$this->assertEquals($product2->id, $list[1]->id);
+		$this->assertEquals($product4->id, $list[2]->id);
+		$this->assertEquals($product5->id, $list[3]->id);
+		$this->assertEquals($product3->id, $list[4]->id);
+
+	}
+
 	private function createCategory($parent_id = 0, $name = 'Категория')
 	{
 		return CategoryAdmin::create(array(
