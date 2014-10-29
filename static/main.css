@@ -51,6 +51,10 @@
 	opacity: 0.3;
 }
 
+form div.form-group {
+	position: relative;
+}
+
 form div.error {
 	position: absolute;
 	margin: 3px;
@@ -59,8 +63,8 @@ form div.error {
 	background-color: lightpink;
 	color: deeppink;
 	border: 1px solid pink;
-	top: -10px;
-	right: 0;
+	top: 0;
+	right: 15px;
 	font-size: 10px;
 }
 

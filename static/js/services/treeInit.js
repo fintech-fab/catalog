@@ -1,11 +1,11 @@
-AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', function (treeServer, $timeout, localStorageService) {
+AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', function (http, $timeout, storage) {
 
 	var $this = this;
 	this.treeScope = null;
 	this.rootScopeEl = null;
 
 	this.getTree = function (result) {
-		treeServer.loadTree(function (res) {
+		http.loadTree(function (res) {
 			result(res.data);
 		});
 	};
@@ -39,12 +39,12 @@ AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', functio
 	};
 
 	this.getCollapseStorage = function () {
-		var list = localStorageService.get('treeCollapseList');
+		var list = storage.get('treeCollapseList');
 		return !list ? [] : list;
 	};
 
 	this.setCollapseStorage = function (list) {
-		localStorageService.set('treeCollapseList', list);
+		storage.set('treeCollapseList', list);
 	};
 
 	this.listModify = function (scope) {

@@ -1,103 +1,131 @@
 var AppControllers = {};
 var AppServices = {};
+var AppExtends = {};
+AppExtends.alerts = function () {
 
-$.fn.ffCatAlert = function (title, text, buttons) {
+	var opened = undefined;
 
-	buttons = typeof buttons !== 'undefined' ? buttons : [];
-	text = typeof text !== 'undefined' ? text : '';
+	return {
 
-	var div = this;
-	div.find('.title').html(title);
-	div.find('.text').html(text);
-	div.find('.buttons').html('');
-	buttons.forEach(function (item) {
-		var button = $('<button type="button" class="btn btn-' + item.type + '">' + item.title + '</button>');
-		if (item.title == 'close' || item.title == 'Close') {
-			button.on('click', function () {
-				$(this).parents('.alert').hide();
+		alertOpen: function (title, text, buttons) {
+			buttons = typeof buttons !== 'undefined' ? buttons : [];
+			text = typeof text !== 'undefined' ? text : '';
+
+			var div = $('.ff-cat-alert');
+			div.find('.title').html(title);
+			div.find('.text').html(text);
+			div.find('.buttons').html('');
+			buttons.forEach(function (item) {
+				var button = $('<button type="button" class="btn btn-' + item.type + '">' + item.title + '</button>');
+				if (item.title == 'close' || item.title == 'Close') {
+					button.on('click', function () {
+						$(this).parents('.alert').hide();
+					});
+				} else {
+					button.on('click', item.click);
+				}
+				button.appendTo(div.find('.buttons'));
 			});
-		} else {
-			button.on('click', item.click);
+			opened = div;
+			opened.removeClass('alert-warning').removeClass('alert-danger').addClass('alert-info');
+			opened.show();
+		},
+
+		alertConfirm: function (title, text, buttonText, callback) {
+			this.alertOpen(
+				title,
+				text,
+				[
+					{
+						type: 'default',
+						title: 'close'
+					},
+					{
+						type: 'primary',
+						title: buttonText,
+						click: callback
+					}
+				]
+			);
+			opened.removeClass('alert-info').addClass('alert-warning');
+		},
+
+		alertClose: function () {
+			opened.hide();
+		},
+
+		alertBusy: function () {
+			opened.find('.btn-primary').button('loading')
+		},
+
+		alertError: function (title, text) {
+			this.alertOpen(title, text, [
+				{
+					type: 'default',
+					title: 'Okay...',
+					click: function () {
+						$(this).parents('.alert').hide();
+					}
+				}
+			]);
+			opened.removeClass('alert-info').addClass('alert-danger');
 		}
-		button.appendTo(div.find('.buttons'));
-	});
-	ffCatApp.alertOpen(div);
+
+	};
 
 };
-var ffCatApp = {
-	openedAlert: null,
-	showErrors: function (res, id, model) {
-		/** @namespace res.errors */
-		if (typeof res == 'object' && typeof res.errors == 'object') {
-			var error = '';
-			jQuery.each(res.errors, function (key, value) {
-				var $form = $('#' + id).find('form');
-				var $input = $form.find('[ng-model="' + model + '.' + key + '"]');
-				if ($input.length == 0) {
-					error += value;
-					return true;
+AppExtends.form = function (params) {
+
+	var id = params["id"];
+	var $form = null;
+	var model = params["model"];
+
+	return {
+
+		errors: {},
+
+		button: function () {
+
+			this.$form();
+			var $button = $form.find('.btn-primary');
+
+			return {
+				loading: function () {
+					$button.button('loading');
+				},
+				reset: function () {
+					$button.button('reset');
 				}
-				var $div = $input.parent();
-				$div.parent().addClass('has-error');
-				$div.append('<div class="error">' + value + '</div>');
-				$div.find('input,select,checkbox,radio').on('click', function () {
-					var $div = $(this).parents('.has-error');
-					$div.removeClass('has-error');
-					$div.find('.error').remove();
-				});
-				return true;
-			});
+			};
+		},
 
-			if (error) {
-				var $error = $('#' + id).parents('.modal-body').next();
-				$error.html(error).show();
+		$form: function () {
+			if (!$form || $form.length == 0) {
+				$form = $('#' + id).find('form');
 			}
+		},
 
+		showErrors: function (response) {
+			if (typeof response.errors !== 'object') {
+				return false;
+			}
+			this.errors = response.errors;
 			return true;
-		}
-		return false;
-	},
-	buttonLock: function (btn) {
-		$('#' + btn).button('loading');
-	},
-	buttonUnlock: function (btn) {
-		$('#' + btn).button('reset');
-	},
-	alert: function (mode, error) {
+		},
 
-		switch (mode) {
+		token: function () {
+			this[model] = this[model] || {};
+			this[model]._token = $('#' + model + '-token').val();
+		},
 
-			case 'fatal':
-
-				$('.ff-cat-alert').ffCatAlert('Fatal server error', '<h3>' + error.message + '</h3> Page must be reload', [
-					{
-						title: 'Okay... reload page',
-						type: 'warning',
-						click: function () {
-							ffCatApp.alertClose();
-							window.location.reload();
-						}
-					}
-				]);
-
-				break;
-
-			default:
-				break;
-
+		cleanup: function () {
+			this[model] = {};
+			this.errors = {};
 		}
 
-	},
-	alertClose: function () {
-		this.openedAlert.hide();
-	},
-	alertOpen: function (alert) {
-		this.openedAlert = alert;
-		this.openedAlert.show();
 	}
 };
-
-AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
+AppServices.treeDragDrop = ['treeServer', function (http) {
 
 	this.scope = null;
 	this.init = function (scope) {
@@ -107,6 +135,8 @@ AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 	this.event = null;
 
 	var $this = this;
+	angular.extend(this, AppExtends.alerts());
+
 	this.dropped = function (event) {
 
 		$this.setEvent(event);
@@ -114,8 +144,7 @@ AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 
 		var post = {id: id, after: 0, pid: $this.getDestId()};
 
-		var url = 'category/move/after';
-		jQuery.each($this.getDestChild(), function (key, value) {
+		$this.getDestChild().forEach(function (value) {
 			if (value.id == id) {
 				return false;
 			}
@@ -123,11 +152,16 @@ AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 			return true;
 		});
 
-		treeInit.rootScope().loadingOverlay = $http.post(url, post).success(function (res) {
-			$this.setSourceModelParentId(res.parent_id);
-		}).error(function (data) {
-			ffCatApp.alert('fatal', data.error);
-		});
+		http.dragDropped(
+			post,
+			function (res) {
+				$this.setSourceModelParentId(res.parent_id);
+			},
+			function (data) {
+				$this.alertError('Server Error', data.error.message)
+			}
+		);
+
 	};
 
 	this.accept = function (sourceNodeScope, destNodesScope) {
@@ -159,14 +193,14 @@ AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 	};
 
 }];
-AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', function (treeServer, $timeout, localStorageService) {
+AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', function (http, $timeout, storage) {
 
 	var $this = this;
 	this.treeScope = null;
 	this.rootScopeEl = null;
 
 	this.getTree = function (result) {
-		treeServer.loadTree(function (res) {
+		http.loadTree(function (res) {
 			result(res.data);
 		});
 	};
@@ -200,12 +234,12 @@ AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', functio
 	};
 
 	this.getCollapseStorage = function () {
-		var list = localStorageService.get('treeCollapseList');
+		var list = storage.get('treeCollapseList');
 		return !list ? [] : list;
 	};
 
 	this.setCollapseStorage = function (list) {
-		localStorageService.set('treeCollapseList', list);
+		storage.set('treeCollapseList', list);
 	};
 
 	this.listModify = function (scope) {
@@ -264,6 +298,18 @@ AppServices.treeNode = ['$http', 'treeInit', function ($http, treeInit) {
 			: treeInit.rootScope();
 	};
 
+	this.id = function () {
+		return this.model.id;
+	};
+
+	this.newSubItem = function (category, extras) {
+		this.getScope().newSubItem(category, extras);
+	};
+
+	this.apply = function (data) {
+		this.scope.setTreeAttributes(data);
+	}
+
 }];
 
 AppServices.treeServer = function ($http) {
@@ -298,6 +344,12 @@ AppServices.treeServer = function ($http) {
 		$http.post('category/update/' + id, category).success(callback);
 	};
 
+	this.dragDropped = function (post, success, error) {
+		this.overlay.over(
+			$http.post('category/move/after', post).success(success).error(error)
+		);
+	};
+
 	this.overlay = function () {
 
 		var scope;
@@ -322,35 +374,30 @@ AppServices.treeServer = function ($http) {
 
 };
 
-AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, treeNode) {
+AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, node) {
 
 	$scope.treeOptions = {
 		dropped: treeDragDrop.dropped,
 		accept: treeDragDrop.accept
 	};
 
+	angular.extend($scope, AppExtends.alerts());
+
 	$scope.removeConfirm = function (scope) {
-		treeNode.init(scope);
-		$('.ff-cat-alert').ffCatAlert(
-			'Remove category [' + treeNode.title + '] confirmation', 'Are your sure?',
-			[
-				{
-					type: 'default',
-					title: 'close'
-				},
-				{
-					type: 'primary',
-					title: 'i\'m sure, remove it',
-					click: function () {
-						$(this).button('loading');
-						http.removeById(treeNode.model.id, function () {
-							$scope.setTreeAttributes({deleted: true});
-							ffCatApp.alertClose();
-						});
-					}
-				}
-			]
+		node.init(scope);
+		$scope.alertConfirm(
+			'Remove category [' + node.title + '] confirmation',
+			'Are your sure?',
+			'i\'m sure, remove it',
+			function () {
+				$scope.alertBusy();
+				http.removeById(node.id(), function () {
+					$scope.setTreeAttributes({deleted: true});
+					$scope.alertClose();
+				});
+			}
 		);
+
 	};
 
 	$scope.countRootChild = function () {
@@ -366,11 +413,11 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.setTreeAttributes = function (data) {
-		if (!treeNode.scope) {
+		if (!node.scope) {
 			return;
 		}
-		var $m = treeNode.model;
-		treeNode.scope.safeApply(function () {
+		var $m = node.model;
+		node.scope.safeApply(function () {
 			if (typeof data.name !== 'undefined') {
 				$m.title = data.name;
 				$m.name = data.name;
@@ -400,9 +447,9 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.toggleEnabled = function (scope) {
-		treeNode.init(scope);
-		http.enableById(treeNode.model.id, function () {
-			$scope.setTreeAttributes({enabled: !treeNode.model.enabled});
+		node.init(scope);
+		http.enableById(node.id(), function () {
+			$scope.setTreeAttributes({enabled: !node.model.enabled});
 		});
 	};
 
@@ -411,9 +458,9 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.showFormNewItem = function (scope) {
-		treeNode.init(scope);
+		node.init(scope);
 		$scope.modalEditForm = $modal({
-			title: 'Add category into: [' + treeNode.title + ']',
+			title: 'Add category into: [' + node.title + ']',
 			contentTemplate: 'template/category.new',
 			template: 'template/category.modal',
 			scope: $scope,
@@ -423,9 +470,9 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.showFormEdit = function (scope) {
-		treeNode.init(scope);
+		node.init(scope);
 		$scope.modalEditForm = $modal({
-			title: 'Edit category [' + treeNode.title + ']',
+			title: 'Edit category [' + node.title + ']',
 			contentTemplate: 'template/category.edit',
 			template: 'template/category.modal',
 			scope: $scope,
@@ -438,7 +485,7 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.newSubItem = function (data, extras) {
-		treeNode.model.nodes.push({
+		node.model.nodes.push({
 			id: data.id,
 			title: data.name,
 			name: data.name,
@@ -488,22 +535,30 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	});
 
 }];
-AppControllers.modalCategoryEdit = ['$scope', 'treeServer', 'treeNode', function ($scope, http, treeNode) {
+AppControllers.modalCategoryEdit = ['$scope', 'treeServer', 'treeNode', function ($scope, http, node) {
 
-	http.getById(treeNode.model.id, function (res) {
+	$scope.category = {};
+
+	angular.extend($scope, AppExtends.form({
+		id: 'modalCategoryEdit',
+		model: 'category'
+	}));
+
+	$scope.button().loading();
+	http.getById(node.id(), function (res) {
 		$scope.doUpdate(res.data);
+		$scope.button().reset();
 	});
 
-	$scope.save = function (category, btn) {
-		ffCatApp.buttonLock(btn);
-		category = (typeof category == 'undefined') ? {} : category;
-		category._token = $('#category-token').val();
+	$scope.save = function () {
+		$scope.button().loading();
+		$scope.token();
 
-		http.updateCategory(treeNode.model.id, category, function (res) {
-			if (!ffCatApp.showErrors(res, 'modalCategoryEdit', 'category')) {
+		http.updateCategory(node.id(), $scope.category, function (res) {
+			if (!$scope.showErrors(res)) {
 				$scope.doUpdate(res);
 			}
-			ffCatApp.buttonUnlock(btn);
+			$scope.button().reset();
 		});
 
 	};
@@ -519,30 +574,31 @@ AppControllers.modalCategoryEdit = ['$scope', 'treeServer', 'treeNode', function
 		data.symlink = res.extras.symlink;
 		data.category_type_id = res.extras.category_type_id;
 		data.type = res.extras.type;
-		treeNode.scope.setTreeAttributes(data);
+		node.apply(data);
 
 	};
 
 }];
 
-AppControllers.modalcategoryNew = ['$scope', 'treeServer', 'treeNode', function ($scope, http, treeNode) {
+AppControllers.modalCategoryNew = ['$scope', 'treeServer', 'treeNode', function ($scope, http, node) {
 
 	$scope.category = {};
+	angular.extend($scope, AppExtends.form({
+		id: 'modalCategoryNew',
+		model: 'category'
+	}));
 
-	$scope.save = function (category, btn) {
-		ffCatApp.buttonLock(btn);
-		category = (typeof category == 'undefined') ? {} : category;
-		category._token = $('#category-token').val();
-		category.parent_id = treeNode.model.id;
+	$scope.save = function () {
+		$scope.button().loading();
+		$scope.category.parent_id = node.id();
 
-		http.createCategory(category, function (res) {
-			if (!ffCatApp.showErrors(res, 'modalCategoryNew', 'category')) {
-				treeNode.getScope().newSubItem(res.category, res.extras);
-				$scope.category = {};
+		http.createCategory($scope.category, function (res) {
+			if (!$scope.showErrors(res)) {
+				node.newSubItem(res.category, res.extras);
+				$scope.cleanup();
 			}
-			ffCatApp.buttonUnlock(btn);
+			$scope.button().reset();
 		});
-
 
 	};
 
@@ -558,7 +614,7 @@ AppControllers.modalcategoryNew = ['$scope', 'treeServer', 'treeNode', function 
 	App.service('treeDragDrop', AppServices.treeDragDrop);
 	App.service('treeNode', AppServices.treeNode);
 
-	App.controller('modalCategoryNew', AppControllers.modalcategoryNew);
+	App.controller('modalCategoryNew', AppControllers.modalCategoryNew);
 	App.controller('modalCategoryEdit', AppControllers.modalCategoryEdit);
 	App.controller('categoryTreeEdit', AppControllers.categoryTreeEdit);
 

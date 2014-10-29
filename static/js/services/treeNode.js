@@ -21,4 +21,16 @@ AppServices.treeNode = ['$http', 'treeInit', function ($http, treeInit) {
 			: treeInit.rootScope();
 	};
 
+	this.id = function () {
+		return this.model.id;
+	};
+
+	this.newSubItem = function (category, extras) {
+		this.getScope().newSubItem(category, extras);
+	};
+
+	this.apply = function (data) {
+		this.scope.setTreeAttributes(data);
+	}
+
 }];

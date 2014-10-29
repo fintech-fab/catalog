@@ -1,32 +1,27 @@
-AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, treeNode) {
+AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, node) {
 
 	$scope.treeOptions = {
 		dropped: treeDragDrop.dropped,
 		accept: treeDragDrop.accept
 	};
 
+	angular.extend($scope, AppExtends.alerts());
+
 	$scope.removeConfirm = function (scope) {
-		treeNode.init(scope);
-		$('.ff-cat-alert').ffCatAlert(
-			'Remove category [' + treeNode.title + '] confirmation', 'Are your sure?',
-			[
-				{
-					type: 'default',
-					title: 'close'
-				},
-				{
-					type: 'primary',
-					title: 'i\'m sure, remove it',
-					click: function () {
-						$(this).button('loading');
-						http.removeById(treeNode.model.id, function () {
-							$scope.setTreeAttributes({deleted: true});
-							ffCatApp.alertClose();
-						});
-					}
-				}
-			]
+		node.init(scope);
+		$scope.alertConfirm(
+			'Remove category [' + node.title + '] confirmation',
+			'Are your sure?',
+			'i\'m sure, remove it',
+			function () {
+				$scope.alertBusy();
+				http.removeById(node.id(), function () {
+					$scope.setTreeAttributes({deleted: true});
+					$scope.alertClose();
+				});
+			}
 		);
+
 	};
 
 	$scope.countRootChild = function () {
@@ -42,11 +37,11 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.setTreeAttributes = function (data) {
-		if (!treeNode.scope) {
+		if (!node.scope) {
 			return;
 		}
-		var $m = treeNode.model;
-		treeNode.scope.safeApply(function () {
+		var $m = node.model;
+		node.scope.safeApply(function () {
 			if (typeof data.name !== 'undefined') {
 				$m.title = data.name;
 				$m.name = data.name;
@@ -76,9 +71,9 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.toggleEnabled = function (scope) {
-		treeNode.init(scope);
-		http.enableById(treeNode.model.id, function () {
-			$scope.setTreeAttributes({enabled: !treeNode.model.enabled});
+		node.init(scope);
+		http.enableById(node.id(), function () {
+			$scope.setTreeAttributes({enabled: !node.model.enabled});
 		});
 	};
 
@@ -87,9 +82,9 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.showFormNewItem = function (scope) {
-		treeNode.init(scope);
+		node.init(scope);
 		$scope.modalEditForm = $modal({
-			title: 'Add category into: [' + treeNode.title + ']',
+			title: 'Add category into: [' + node.title + ']',
 			contentTemplate: 'template/category.new',
 			template: 'template/category.modal',
 			scope: $scope,
@@ -99,9 +94,9 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.showFormEdit = function (scope) {
-		treeNode.init(scope);
+		node.init(scope);
 		$scope.modalEditForm = $modal({
-			title: 'Edit category [' + treeNode.title + ']',
+			title: 'Edit category [' + node.title + ']',
 			contentTemplate: 'template/category.edit',
 			template: 'template/category.modal',
 			scope: $scope,
@@ -114,7 +109,7 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.newSubItem = function (data, extras) {
-		treeNode.model.nodes.push({
+		node.model.nodes.push({
 			id: data.id,
 			title: data.name,
 			name: data.name,

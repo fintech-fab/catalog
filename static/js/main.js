@@ -8,7 +8,7 @@
 	App.service('treeDragDrop', AppServices.treeDragDrop);
 	App.service('treeNode', AppServices.treeNode);
 
-	App.controller('modalCategoryNew', AppControllers.modalcategoryNew);
+	App.controller('modalCategoryNew', AppControllers.modalCategoryNew);
 	App.controller('modalCategoryEdit', AppControllers.modalCategoryEdit);
 	App.controller('categoryTreeEdit', AppControllers.categoryTreeEdit);
 

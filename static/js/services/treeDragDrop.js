@@ -1,4 +1,4 @@
-AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
+AppServices.treeDragDrop = ['treeServer', function (http) {
 
 	this.scope = null;
 	this.init = function (scope) {
@@ -8,6 +8,8 @@ AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 	this.event = null;
 
 	var $this = this;
+	angular.extend(this, AppExtends.alerts());
+
 	this.dropped = function (event) {
 
 		$this.setEvent(event);
@@ -15,8 +17,7 @@ AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 
 		var post = {id: id, after: 0, pid: $this.getDestId()};
 
-		var url = 'category/move/after';
-		jQuery.each($this.getDestChild(), function (key, value) {
+		$this.getDestChild().forEach(function (value) {
 			if (value.id == id) {
 				return false;
 			}
@@ -24,11 +25,16 @@ AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 			return true;
 		});
 
-		treeInit.rootScope().loadingOverlay = $http.post(url, post).success(function (res) {
-			$this.setSourceModelParentId(res.parent_id);
-		}).error(function (data) {
-			ffCatApp.alert('fatal', data.error);
-		});
+		http.dragDropped(
+			post,
+			function (res) {
+				$this.setSourceModelParentId(res.parent_id);
+			},
+			function (data) {
+				$this.alertError('Server Error', data.error.message)
+			}
+		);
+
 	};
 
 	this.accept = function (sourceNodeScope, destNodesScope) {

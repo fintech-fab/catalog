@@ -30,6 +30,12 @@ AppServices.treeServer = function ($http) {
 		$http.post('category/update/' + id, category).success(callback);
 	};
 
+	this.dragDropped = function (post, success, error) {
+		this.overlay.over(
+			$http.post('category/move/after', post).success(success).error(error)
+		);
+	};
+
 	this.overlay = function () {
 
 		var scope;

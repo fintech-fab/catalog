@@ -66,7 +66,7 @@ gulp.task('app.js', function () {
 
 	var appFiles = [
 		sourcePath + 'js/define.js',
-		sourcePath + 'js/helpers/*.js',
+		sourcePath + 'js/extends/*.js',
 		sourcePath + 'js/services/*.js',
 		sourcePath + 'js/controllers/*.js',
 		sourcePath + 'js/main.js'
@@ -102,7 +102,7 @@ gulp.task('watch', function () {
 	var files = [
 		sourcePath + 'js/*.js',
 		sourcePath + 'js/controllers/*.js',
-		sourcePath + 'js/helpers/*.js',
+		sourcePath + 'js/extends/*.js',
 		sourcePath + 'js/services/*.js',
 		sourcePath + 'main.css'
 	];
