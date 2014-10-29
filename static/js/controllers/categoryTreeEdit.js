@@ -1,4 +1,4 @@
-App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, $http, $modal, treeInit, treeDragDrop, treeNode) {
+AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, treeNode) {
 
 	$scope.treeOptions = {
 		dropped: treeDragDrop.dropped,
@@ -19,7 +19,7 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 					title: 'i\'m sure, remove it',
 					click: function () {
 						$(this).button('loading');
-						$http.post('category/remove', {id: treeNode.model.id}).success(function () {
+						http.removeById(treeNode.model.id, function () {
 							$scope.setTreeAttributes({deleted: true});
 							ffCatApp.alertClose();
 						});
@@ -77,14 +77,9 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 
 	$scope.toggleEnabled = function (scope) {
 		treeNode.init(scope);
-		treeInit.rootScope().loadingOverlay =
-			$http.post(
-				'category/enable',
-				{id: treeNode.model.id}
-			)
-				.success(function () {
-					$scope.setTreeAttributes({enabled: !treeNode.model.enabled});
-				});
+		http.enableById(treeNode.model.id, function () {
+			$scope.setTreeAttributes({enabled: !treeNode.model.enabled});
+		});
 	};
 
 	$scope.addRootItem = function () {
@@ -115,7 +110,7 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	};
 
 	$scope.loadTagItems = function (query) {
-		return $http.get('category/tags/autocomplete?term=' + query);
+		return http.findTags(query);
 	};
 
 	$scope.newSubItem = function (data, extras) {
@@ -164,6 +159,8 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	treeInit.getTree(function (result) {
 		$scope.data = result;
 		treeInit.initCollapse($scope);
+		// loadingOverlay it is block html when server request in process
+		http.overlay.set(treeInit.rootScope);
 	});
 
-}]);
+}];

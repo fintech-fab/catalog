@@ -1,24 +1,21 @@
-App.controller('modalCategoryEdit', ['$scope', '$http', 'treeNode', function ($scope, $http, treeNode) {
+AppControllers.modalCategoryEdit = ['$scope', 'treeServer', 'treeNode', function ($scope, http, treeNode) {
 
-	$http.get('rest/categories/item/' + treeNode.model.id)
-		.then(function (res) {
-			$scope.doUpdate(res.data);
-		});
+	http.getById(treeNode.model.id, function (res) {
+		$scope.doUpdate(res.data);
+	});
 
 	$scope.save = function (category, btn) {
 		ffCatApp.buttonLock(btn);
 		category = (typeof category == 'undefined') ? {} : category;
 		category._token = $('#category-token').val();
-		$http.post(
-			'category/update/' + $scope.category.id,
-			category
-		)
-			.success(function (res) {
-				if (!ffCatApp.showErrors(res, 'modalCategoryEdit', 'category')) {
-					$scope.doUpdate(res);
-				}
-				ffCatApp.buttonUnlock(btn);
-			});
+
+		http.updateCategory(treeNode.model.id, category, function (res) {
+			if (!ffCatApp.showErrors(res, 'modalCategoryEdit', 'category')) {
+				$scope.doUpdate(res);
+			}
+			ffCatApp.buttonUnlock(btn);
+		});
+
 	};
 
 	$scope.doUpdate = function (res) {
@@ -36,4 +33,4 @@ App.controller('modalCategoryEdit', ['$scope', '$http', 'treeNode', function ($s
 
 	};
 
-}]);
+}];

@@ -90,7 +90,7 @@ class CategoryComponent
 	public function update(array $item)
 	{
 
-		$this->onlyUpdateInput($item);
+		$item = $this->onlyUpdateInput($item);
 
 		foreach ($item as $key => $value) {
 			$this->category->$key = $value;
@@ -461,12 +461,12 @@ class CategoryComponent
 	public function recalculateMargins()
 	{
 
-		$this->category->getConnection()->table($this->category->table)->lock();
+		$this->lock();
 		$i = 0;
 		foreach ($this->topList() as $cat) {
 			$this->_recalculateMargins($cat, $i);
 		}
-		$this->category->getConnection()->table($this->category->table)->lock(false);
+		$this->unlock();
 
 	}
 
@@ -690,12 +690,13 @@ class CategoryComponent
 
 	private function lock()
 	{
-		$this->category->getConnection()->table($this->category->getTable())->lock();
+		$table = $this->category->getTable();
+		$this->category->getConnection()->getPdo()->exec("LOCK TABLES `$table` WRITE");
 	}
 
 	private function unlock()
 	{
-		$this->category->getConnection()->table($this->category->getTable())->lock(false);
+		$this->category->getConnection()->getPdo()->exec("UNLOCK TABLES");
 	}
 
 

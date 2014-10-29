@@ -1,4 +1,4 @@
-App.service('treeNode', ['$http', 'treeInit', function ($http, treeInit) {
+AppServices.treeNode = ['$http', 'treeInit', function ($http, treeInit) {
 
 	this.scope = null;
 	this.model = null;
@@ -21,4 +21,4 @@ App.service('treeNode', ['$http', 'treeInit', function ($http, treeInit) {
 			: treeInit.rootScope();
 	};
 
-}]);
+}];

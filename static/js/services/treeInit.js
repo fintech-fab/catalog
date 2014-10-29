@@ -1,11 +1,11 @@
-App.service('treeInit', ['$http', '$timeout', 'localStorageService', function ($http, $timeout, localStorageService) {
+AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', function (treeServer, $timeout, localStorageService) {
 
 	var $this = this;
 	this.treeScope = null;
 	this.rootScopeEl = null;
 
 	this.getTree = function (result) {
-		$http.get('rest/categories/tree').then(function (res) {
+		treeServer.loadTree(function (res) {
 			result(res.data);
 		});
 	};
@@ -77,4 +77,5 @@ App.service('treeInit', ['$http', '$timeout', 'localStorageService', function ($
 		return this.treeScope.$$childHead.$nodesScope.$modelValue;
 	};
 
-}]);
+}];
+

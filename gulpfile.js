@@ -1,10 +1,8 @@
 //*********** IMPORTS *****************
 var gulp = require('gulp');
 var sass = require('gulp-ruby-sass');
-var gutil = require('gulp-util');
 var rename = require("gulp-rename");
 var map = require("map-stream");
-var livereload = require("gulp-livereload");
 var concat = require("gulp-concat");
 var uglify = require('gulp-uglify');
 var watch = require('gulp-watch');
@@ -67,10 +65,11 @@ gulp.task('app.js', function () {
 	];
 
 	var appFiles = [
-		sourcePath + 'js/main.js',
+		sourcePath + 'js/define.js',
 		sourcePath + 'js/helpers/*.js',
 		sourcePath + 'js/services/*.js',
-		sourcePath + 'js/controllers/*.js'
+		sourcePath + 'js/controllers/*.js',
+		sourcePath + 'js/main.js'
 	];
 
 	gulp.src(srcFiles)

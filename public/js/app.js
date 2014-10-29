@@ -1,8 +1,5 @@
-var App;
-(function () {
-	'use strict';
-	App = angular.module('treeApp', ['ui.tree', 'mgcrea.ngStrap', 'cgBusy', 'ngTagsInput', 'LocalStorageModule']);
-})();
+var AppControllers = {};
+var AppServices = {};
 
 $.fn.ffCatAlert = function (title, text, buttons) {
 
@@ -100,7 +97,7 @@ var ffCatApp = {
 	}
 };
 
-App.service('treeDragDrop', ['$http', 'treeInit', function ($http, treeInit) {
+AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 
 	this.scope = null;
 	this.init = function (scope) {
@@ -161,16 +158,15 @@ App.service('treeDragDrop', ['$http', 'treeInit', function ($http, treeInit) {
 		this.event = event;
 	};
 
-}]);
-
-App.service('treeInit', ['$http', '$timeout', 'localStorageService', function ($http, $timeout, localStorageService) {
+}];
+AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', function (treeServer, $timeout, localStorageService) {
 
 	var $this = this;
 	this.treeScope = null;
 	this.rootScopeEl = null;
 
 	this.getTree = function (result) {
-		$http.get('rest/categories/tree').then(function (res) {
+		treeServer.loadTree(function (res) {
 			result(res.data);
 		});
 	};
@@ -242,9 +238,10 @@ App.service('treeInit', ['$http', '$timeout', 'localStorageService', function ($
 		return this.treeScope.$$childHead.$nodesScope.$modelValue;
 	};
 
-}]);
+}];
 
-App.service('treeNode', ['$http', 'treeInit', function ($http, treeInit) {
+
+AppServices.treeNode = ['$http', 'treeInit', function ($http, treeInit) {
 
 	this.scope = null;
 	this.model = null;
@@ -267,9 +264,65 @@ App.service('treeNode', ['$http', 'treeInit', function ($http, treeInit) {
 			: treeInit.rootScope();
 	};
 
-}]);
+}];
 
-App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, $http, $modal, treeInit, treeDragDrop, treeNode) {
+AppServices.treeServer = function ($http) {
+
+	this.loadTree = function (callback) {
+		$http.get('rest/categories/tree').then(callback);
+	};
+
+	this.removeById = function (id, callback) {
+		$http.post('category/remove', {id: id}).success(callback);
+	};
+
+	this.enableById = function (id, callback) {
+		this.overlay.over(
+			$http.post('category/enable', {id: id}).success(callback)
+		);
+	};
+
+	this.findTags = function (term) {
+		return $http.get('category/tags/autocomplete?term=' + term);
+	};
+
+	this.createCategory = function (category, callback) {
+		$http.post('category/create', category).success(callback);
+	};
+
+	this.getById = function (id, callback) {
+		$http.get('rest/categories/item/' + id).then(callback);
+	};
+
+	this.updateCategory = function (id, category, callback) {
+		$http.post('category/update/' + id, category).success(callback);
+	};
+
+	this.overlay = function () {
+
+		var scope;
+
+		return {
+			/**
+			 * @param rootScope function, must returns tree root scope
+			 */
+			set: function (rootScope) {
+				scope = rootScope;
+			},
+			/**
+			 * @param request promise
+			 */
+			over: function (request) {
+				// cg-busy="loadingOverlay" called in directive
+				scope().loadingOverlay = request;
+			}
+		};
+
+	}();
+
+};
+
+AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, treeNode) {
 
 	$scope.treeOptions = {
 		dropped: treeDragDrop.dropped,
@@ -290,7 +343,7 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 					title: 'i\'m sure, remove it',
 					click: function () {
 						$(this).button('loading');
-						$http.post('category/remove', {id: treeNode.model.id}).success(function () {
+						http.removeById(treeNode.model.id, function () {
 							$scope.setTreeAttributes({deleted: true});
 							ffCatApp.alertClose();
 						});
@@ -348,14 +401,9 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 
 	$scope.toggleEnabled = function (scope) {
 		treeNode.init(scope);
-		treeInit.rootScope().loadingOverlay =
-			$http.post(
-				'category/enable',
-				{id: treeNode.model.id}
-			)
-				.success(function () {
-					$scope.setTreeAttributes({enabled: !treeNode.model.enabled});
-				});
+		http.enableById(treeNode.model.id, function () {
+			$scope.setTreeAttributes({enabled: !treeNode.model.enabled});
+		});
 	};
 
 	$scope.addRootItem = function () {
@@ -386,7 +434,7 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	};
 
 	$scope.loadTagItems = function (query) {
-		return $http.get('category/tags/autocomplete?term=' + query);
+		return http.findTags(query);
 	};
 
 	$scope.newSubItem = function (data, extras) {
@@ -435,30 +483,29 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	treeInit.getTree(function (result) {
 		$scope.data = result;
 		treeInit.initCollapse($scope);
+		// loadingOverlay it is block html when server request in process
+		http.overlay.set(treeInit.rootScope);
 	});
 
-}]);
-App.controller('modalCategoryEdit', ['$scope', '$http', 'treeNode', function ($scope, $http, treeNode) {
+}];
+AppControllers.modalCategoryEdit = ['$scope', 'treeServer', 'treeNode', function ($scope, http, treeNode) {
 
-	$http.get('rest/categories/item/' + treeNode.model.id)
-		.then(function (res) {
-			$scope.doUpdate(res.data);
-		});
+	http.getById(treeNode.model.id, function (res) {
+		$scope.doUpdate(res.data);
+	});
 
 	$scope.save = function (category, btn) {
 		ffCatApp.buttonLock(btn);
 		category = (typeof category == 'undefined') ? {} : category;
 		category._token = $('#category-token').val();
-		$http.post(
-			'category/update/' + $scope.category.id,
-			category
-		)
-			.success(function (res) {
-				if (!ffCatApp.showErrors(res, 'modalCategoryEdit', 'category')) {
-					$scope.doUpdate(res);
-				}
-				ffCatApp.buttonUnlock(btn);
-			});
+
+		http.updateCategory(treeNode.model.id, category, function (res) {
+			if (!ffCatApp.showErrors(res, 'modalCategoryEdit', 'category')) {
+				$scope.doUpdate(res);
+			}
+			ffCatApp.buttonUnlock(btn);
+		});
+
 	};
 
 	$scope.doUpdate = function (res) {
@@ -476,8 +523,9 @@ App.controller('modalCategoryEdit', ['$scope', '$http', 'treeNode', function ($s
 
 	};
 
-}]);
-App.controller('modalCategoryNew', ['$scope', '$http', 'treeNode', function ($scope, $http, treeNode) {
+}];
+
+AppControllers.modalcategoryNew = ['$scope', 'treeServer', 'treeNode', function ($scope, http, treeNode) {
 
 	$scope.category = {};
 
@@ -486,18 +534,32 @@ App.controller('modalCategoryNew', ['$scope', '$http', 'treeNode', function ($sc
 		category = (typeof category == 'undefined') ? {} : category;
 		category._token = $('#category-token').val();
 		category.parent_id = treeNode.model.id;
-		$http.post(
-			'category/create',
-			category
-		)
-			.success(function (res) {
-				if (!ffCatApp.showErrors(res, 'modalCategoryNew', 'category')) {
-					treeNode.getScope().newSubItem(res.category, res.extras);
-					$scope.category = {};
-				}
-				ffCatApp.buttonUnlock(btn);
-			});
+
+		http.createCategory(category, function (res) {
+			if (!ffCatApp.showErrors(res, 'modalCategoryNew', 'category')) {
+				treeNode.getScope().newSubItem(res.category, res.extras);
+				$scope.category = {};
+			}
+			ffCatApp.buttonUnlock(btn);
+		});
+
 
 	};
 
-}]);
+}];
+
+(function () {
+	'use strict';
+
+	var App = angular.module('treeApp', ['ui.tree', 'mgcrea.ngStrap', 'cgBusy', 'ngTagsInput', 'LocalStorageModule']);
+
+	App.service('treeServer', AppServices.treeServer);
+	App.service('treeInit', AppServices.treeInit);
+	App.service('treeDragDrop', AppServices.treeDragDrop);
+	App.service('treeNode', AppServices.treeNode);
+
+	App.controller('modalCategoryNew', AppControllers.modalcategoryNew);
+	App.controller('modalCategoryEdit', AppControllers.modalCategoryEdit);
+	App.controller('categoryTreeEdit', AppControllers.categoryTreeEdit);
+
+})();

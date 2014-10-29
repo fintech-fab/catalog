@@ -42,6 +42,41 @@ class ProductCategoryTest extends \TestCase
 
 	}
 
+
+	public function testRemove()
+	{
+
+		$product = $this->createProduct();
+		$category1 = $this->createCategory();
+		$category2 = $this->createCategory();
+		$category3 = $this->createCategory();
+
+		ProductAdmin::add2Category([$category1->id, $category2->id, $category3->id]);
+		ProductAdmin::removeFromCategory([$category1->id, $category3->id]);
+
+		$categories = $product->categories;
+		$this->assertCount(1, $categories);
+		$this->assertEquals($category2->id, $categories[0]->id);
+
+	}
+
+	public function testClear()
+	{
+
+		$product = $this->createProduct();
+		$category1 = $this->createCategory();
+		$category2 = $this->createCategory();
+		$category3 = $this->createCategory();
+
+		ProductAdmin::add2Category([$category1->id, $category2->id, $category3->id]);
+		ProductAdmin::clearCategory([$category1->id, $category3->id]);
+
+		$categories = $product->categories;
+		$this->assertCount(1, $categories);
+		$this->assertEquals($category2->id, $categories[0]->id);
+
+	}
+
 	public function testDefaultSorting()
 	{
 
@@ -178,6 +213,53 @@ class ProductCategoryTest extends \TestCase
 		$this->assertEquals($product3->id, $list[4]->id);
 
 	}
+
+	public function testBatchOrderCategoryAfter()
+	{
+
+		$product1 = $this->createProduct();
+		$product2 = $this->createProduct();
+		$product3 = $this->createProduct();
+		$product4 = $this->createProduct();
+		$product5 = $this->createProduct();
+
+		$category = $this->createCategory();
+
+		ProductAdmin::init($product1)->add2Category($category->id);
+		ProductAdmin::init($product2)->add2Category($category->id);
+		ProductAdmin::init($product3)->add2Category($category->id);
+		ProductAdmin::init($product4)->add2Category($category->id);
+		ProductAdmin::init($product5)->add2Category($category->id);
+
+		ProductAdmin::moveBatchAfter([$product3->id, $product5->id], $product1->id, $category->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product1->id, $list[0]->id);
+		$this->assertEquals($product3->id, $list[1]->id);
+		$this->assertEquals($product5->id, $list[2]->id);
+		$this->assertEquals($product2->id, $list[3]->id);
+		$this->assertEquals($product4->id, $list[4]->id);
+
+		ProductAdmin::moveBatchAfter([$product3->id, $product5->id, $product2->id], 0, $category->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product3->id, $list[0]->id);
+		$this->assertEquals($product5->id, $list[1]->id);
+		$this->assertEquals($product2->id, $list[2]->id);
+		$this->assertEquals($product1->id, $list[3]->id);
+		$this->assertEquals($product4->id, $list[4]->id);
+
+		ProductAdmin::moveBatchAfter([$product5->id, $product1->id], $product4->id, $category->id);
+		$list = ProductAdmin::listByCategory($category->id);
+
+		$this->assertEquals($product3->id, $list[0]->id);
+		$this->assertEquals($product2->id, $list[1]->id);
+		$this->assertEquals($product4->id, $list[2]->id);
+		$this->assertEquals($product5->id, $list[3]->id);
+		$this->assertEquals($product1->id, $list[4]->id);
+
+	}
+
 
 	private function createCategory($parent_id = 0, $name = 'Категория')
 	{

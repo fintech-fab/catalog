@@ -13,7 +13,11 @@ namespace FintechFab\Catalog\Models;
  * @method static ProductCategoryRel existing($pid, $cid)
  * @method static ProductCategoryRel whereCategoryId()
  * @method static ProductCategoryRel whereProductId()
+ * @method static ProductCategoryRel whereIn()
  * @method static ProductCategoryRel first()
+ * @method static ProductCategoryRel orderBy()
+ * @method static ProductCategoryRel get()
+ * @method static ProductCategoryRel[] all()
  *
  * @package FintechFab\Catalog\Models
  */
@@ -48,6 +52,38 @@ class ProductCategoryRel extends \Eloquent
 			]);
 
 		}
+	}
+
+	/**
+	 * remove relation product category
+	 *
+	 * @param integer $product_id
+	 * @param array   $categories
+	 */
+	public function removeProductFromCategory($product_id, $categories)
+	{
+
+		self::getConnection()
+			->table($this->getTable())
+			->whereIn('category_id', $categories)
+			->where('product_id', $product_id)
+			->delete();
+
+	}
+
+	/**
+	 * remove relation product category
+	 *
+	 * @param array $categories
+	 */
+	public function clearCategory($categories)
+	{
+
+		self::getConnection()
+			->table($this->getTable())
+			->whereIn('category_id', $categories)
+			->delete();
+
 	}
 
 	/**

@@ -1,4 +1,4 @@
-App.service('treeDragDrop', ['$http', 'treeInit', function ($http, treeInit) {
+AppServices.treeDragDrop = ['$http', 'treeInit', function ($http, treeInit) {
 
 	this.scope = null;
 	this.init = function (scope) {
@@ -59,4 +59,4 @@ App.service('treeDragDrop', ['$http', 'treeInit', function ($http, treeInit) {
 		this.event = event;
 	};
 
-}]);
+}];

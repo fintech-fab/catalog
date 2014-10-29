@@ -129,6 +129,52 @@ class ProductComponent
 
 	}
 
+	/**
+	 * @param integer|array $categories
+	 *
+	 * @return ProductComponent
+	 */
+	public function removeFromCategory($categories = [])
+	{
+
+		if (!is_array($categories)) {
+			$categories = [$categories];
+		}
+		if (is_object($categories[0])) {
+			foreach ($categories as &$item) {
+				$item = $item->id;
+			}
+		}
+
+		$this->categoryRel->removeProductFromCategory($this->get()->id, $categories);
+
+		return $this;
+
+	}
+
+	/**
+	 * @param integer|array $categories
+	 *
+	 * @return ProductComponent
+	 */
+	public function clearCategory($categories = [])
+	{
+
+		if (!is_array($categories)) {
+			$categories = [$categories];
+		}
+		if (is_object($categories[0])) {
+			foreach ($categories as &$item) {
+				$item = $item->id;
+			}
+		}
+
+		$this->categoryRel->clearCategory($categories);
+
+		return $this;
+
+	}
+
 
 	private function prepareRequiredData(array &$item)
 	{
@@ -267,6 +313,7 @@ class ProductComponent
 
 		$currentRel = $this->categoryRel->existing($this->get()->id, $category_id)->first();
 
+		$this->lockRel();
 		$this->categoryRel
 			->whereCategoryId($currentRel->category_id)
 			->where('order', '<', $currentRel->order)
@@ -275,6 +322,7 @@ class ProductComponent
 			]);
 
 		$currentRel->setOrder(1);
+		$this->unlock();
 
 		return $this;
 
@@ -292,6 +340,7 @@ class ProductComponent
 
 		$currentRel = $this->categoryRel->existing($this->get()->id, $category_id)->first();
 
+		$this->lockRel();
 		$this->categoryRel
 			->whereCategoryId($currentRel->category_id)
 			->where('order', '>', $currentRel->order)
@@ -301,6 +350,7 @@ class ProductComponent
 
 		$max = $this->categoryRel->maxCategoryOrder($currentRel->category_id);
 		$currentRel->setOrder($max + 1);
+		$this->unlock();
 
 		return $this;
 
@@ -329,6 +379,7 @@ class ProductComponent
 
 		$afterRel = $this->categoryRel->existing($id, $category_id)->first();
 
+		$this->lockRel();
 		if ($currentRel->order > $afterRel->order) {
 
 			$this->categoryRel
@@ -351,6 +402,48 @@ class ProductComponent
 				]);
 			$currentRel->setOrder($afterRel->order);
 
+		}
+		$this->unlock();
+
+		return $this;
+
+	}
+
+	/**
+	 * @param array   $list
+	 * @param integer $id
+	 * @param integer $category_id
+	 *
+	 * @return ProductComponent
+	 */
+	public function moveBatchAfter($list, $id, $category_id)
+	{
+
+		if (!empty($list[0]) && is_object($list[0])) {
+			foreach ($list as &$val) {
+				$val = $val->id;
+			}
+		}
+
+		if (0 < $id) {
+			$afterRel = $this->categoryRel->existing($id, $category_id)->first();
+		} else {
+			$afterRel = (object)[
+				'product_id'  => 0,
+				'category_id' => $category_id,
+			];
+		}
+
+		$list4Move = $this->categoryRel
+			->whereCategoryId($afterRel->category_id)
+			->whereIn('product_id', $list)
+			->orderBy('order')
+			->get()->all();
+
+		$lastRel = $afterRel;
+		foreach ($list4Move as $rel4Move) {
+			$this->init($rel4Move->product_id)->moveAfter($afterRel->category_id, $lastRel->product_id);
+			$lastRel = $rel4Move;
 		}
 
 		return $this;
@@ -421,12 +514,19 @@ class ProductComponent
 
 	private function lock()
 	{
-		$this->product->getConnection()->table($this->product->getTable())->lock();
+		$table = $this->product->getTable();
+		$this->product->getConnection()->getPdo()->exec("LOCK TABLES `$table` WRITE");
 	}
 
 	private function unlock()
 	{
-		$this->product->getConnection()->table($this->product->getTable())->lock(false);
+		$this->product->getConnection()->getPdo()->exec("UNLOCK TABLES");
+	}
+
+	private function lockRel()
+	{
+		$table = $this->categoryRel->getTable();
+		$this->categoryRel->getConnection()->getPdo()->exec("LOCK TABLES `$table` WRITE");
 	}
 
 
