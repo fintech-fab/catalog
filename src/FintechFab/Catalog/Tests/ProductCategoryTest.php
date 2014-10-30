@@ -77,6 +77,34 @@ class ProductCategoryTest extends \TestCase
 
 	}
 
+	public function testChange()
+	{
+
+		$product1 = $this->createProduct();
+		$product2 = $this->createProduct();
+		$product3 = $this->createProduct();
+
+		$category1 = $this->createCategory();
+		$category2 = $this->createCategory();
+		$category3 = $this->createCategory();
+
+		ProductAdmin::init($product1)->add2Category([$category1, $category2]);
+		ProductAdmin::init($product2)->add2Category([$category1, $category2]);
+		ProductAdmin::init($product3)->add2Category([$category1, $category3]);
+
+		ProductAdmin::changeBatchCategory([$product2, $product3], $category1->id, $category3->id);
+
+		$categories = $product2->categories;
+		$this->assertCount(2, $categories);
+		$this->assertEquals($category2->id, $categories[0]->id);
+		$this->assertEquals($category3->id, $categories[1]->id);
+
+		$categories = $product3->categories;
+		$this->assertCount(1, $categories);
+		$this->assertEquals($category3->id, $categories[0]->id);
+
+	}
+
 	public function testDefaultSorting()
 	{
 
@@ -103,6 +131,37 @@ class ProductCategoryTest extends \TestCase
 		$this->assertEquals(1, $rel->order);
 
 		$rel = ProductCategoryRel::existing($product3->id, $category->id)->first();
+		$this->assertEquals(3, $rel->order);
+
+	}
+
+	public function testRemoveSorting()
+	{
+
+		$product1 = $this->createProduct();
+		$product2 = $this->createProduct();
+		$product3 = $this->createProduct();
+		$product4 = $this->createProduct();
+		$product5 = $this->createProduct();
+
+		$category = $this->createCategory();
+
+		ProductAdmin::init($product1)->add2Category($category->id);
+		ProductAdmin::init($product2)->add2Category($category->id);
+		ProductAdmin::init($product3)->add2Category($category->id);
+		ProductAdmin::init($product4)->add2Category($category->id);
+		ProductAdmin::init($product5)->add2Category($category->id);
+
+		ProductAdmin::init($product2)->removeFromCategory($category->id);
+		ProductAdmin::init($product4)->removeFromCategory($category->id);
+
+		$rel = ProductCategoryRel::existing($product1->id, $category->id)->first();
+		$this->assertEquals(1, $rel->order);
+
+		$rel = ProductCategoryRel::existing($product3->id, $category->id)->first();
+		$this->assertEquals(2, $rel->order);
+
+		$rel = ProductCategoryRel::existing($product5->id, $category->id)->first();
 		$this->assertEquals(3, $rel->order);
 
 	}

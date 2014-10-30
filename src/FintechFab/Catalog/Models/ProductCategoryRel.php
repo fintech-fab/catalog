@@ -62,6 +62,9 @@ class ProductCategoryRel extends \Eloquent
 	 */
 	public function removeProductFromCategory($product_id, $categories)
 	{
+		if (!is_array($categories)) {
+			$categories = [$categories];
+		}
 
 		self::getConnection()
 			->table($this->getTable())

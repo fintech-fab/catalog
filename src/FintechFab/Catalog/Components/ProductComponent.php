@@ -107,24 +107,15 @@ class ProductComponent
 	}
 
 	/**
-	 * @param integer|array $categories
+	 * @param integer|array|\FintechFab\Catalog\Models\Category $categories
 	 *
 	 * @return ProductComponent
 	 */
 	public function add2Category($categories = [])
 	{
 
-		if (!is_array($categories)) {
-			$categories = [$categories];
-		}
-		if (is_object($categories[0])) {
-			foreach ($categories as &$item) {
-				$item = $item->id;
-			}
-		}
-
+		$this->ob2id($categories);
 		$this->categoryRel->addProduct2Category($this->get()->id, $categories);
-
 		return $this;
 
 	}
@@ -136,18 +127,21 @@ class ProductComponent
 	 */
 	public function removeFromCategory($categories = [])
 	{
+		$id = $this->get()->id;
+		$this->ob2id($categories);
 
-		if (!is_array($categories)) {
-			$categories = [$categories];
+		$this->lockRel();
+		foreach ($categories as $category_id) {
+			$rel = $this->categoryRel->existing($id, $category_id)->first();
+			$this->categoryRel
+				->whereCategoryId($category_id)
+				->where('order', '>', $rel->order)
+				->update([
+					'order' => $this->categoryRel->getConnection()->raw('`order`-1')
+				]);
+			$this->categoryRel->removeProductFromCategory($id, $category_id);
 		}
-		if (is_object($categories[0])) {
-			foreach ($categories as &$item) {
-				$item = $item->id;
-			}
-		}
-
-		$this->categoryRel->removeProductFromCategory($this->get()->id, $categories);
-
+		$this->unlock();
 		return $this;
 
 	}
@@ -160,17 +154,8 @@ class ProductComponent
 	public function clearCategory($categories = [])
 	{
 
-		if (!is_array($categories)) {
-			$categories = [$categories];
-		}
-		if (is_object($categories[0])) {
-			foreach ($categories as &$item) {
-				$item = $item->id;
-			}
-		}
-
+		$this->ob2id($categories);
 		$this->categoryRel->clearCategory($categories);
-
 		return $this;
 
 	}
@@ -419,11 +404,7 @@ class ProductComponent
 	public function moveBatchAfter($list, $id, $category_id)
 	{
 
-		if (!empty($list[0]) && is_object($list[0])) {
-			foreach ($list as &$val) {
-				$val = $val->id;
-			}
-		}
+		$this->ob2id($list);
 
 		if (0 < $id) {
 			$afterRel = $this->categoryRel->existing($id, $category_id)->first();
@@ -447,6 +428,23 @@ class ProductComponent
 		}
 
 		return $this;
+
+	}
+
+
+	public function changeBatchCategory($products, $categoryFromId, $categoryToId)
+	{
+
+		$this->ob2id($products);
+
+		foreach ($products as $product_id) {
+			if ($categoryFromId == $categoryToId) {
+				continue;
+			}
+			$this->init($product_id)
+				->removeFromCategory($categoryFromId)
+				->add2Category($categoryToId);
+		}
 
 	}
 
@@ -529,5 +527,16 @@ class ProductComponent
 		$this->categoryRel->getConnection()->getPdo()->exec("LOCK TABLES `$table` WRITE");
 	}
 
+	private function ob2id(&$list)
+	{
+		if (!is_array($list)) {
+			$list = [$list];
+		}
+		if (!empty($list[0]) && is_object($list[0])) {
+			foreach ($list as &$val) {
+				$val = $val->id;
+			}
+		}
+	}
 
 }
