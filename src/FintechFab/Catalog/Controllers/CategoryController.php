@@ -103,6 +103,11 @@ class CategoryController extends \Controller
 		return \Response::json(CategoryAdmin::treeToArray());
 	}
 
+	public function treeSimple()
+	{
+		return CategoryAdmin::treeByLeft();
+	}
+
 	public function restItem($id)
 	{
 		return \Response::json([

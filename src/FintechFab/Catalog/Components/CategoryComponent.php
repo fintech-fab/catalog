@@ -612,6 +612,12 @@ class CategoryComponent
 
 	public function treeToArray($list = [])
 	{
+
+		static $qnt = null;
+		if (null == $qnt) {
+			$qnt = \ProductAdmin::categoryQuantity();
+		}
+
 		if (empty($list)) {
 			$list = $this->topList();
 		}
@@ -628,12 +634,21 @@ class CategoryComponent
 				'symlink'          => $cat->symlink_id > 0 ? $cat->symlink->name : '',
 				'category_type_id' => $cat->category_type_id,
 				'type'             => $cat->category_type_id > 0 ? $cat->type->name : '',
+				'qnt' => !empty($qnt[$cat->id]) ? $qnt[$cat->id] : 0,
 			];
 			$item['nodes'] = $this->treeToArray($cat->descendants);
 			$result[] = $item;
 		}
 
 		return $result;
+	}
+
+	/**
+	 * @return array
+	 */
+	public function treeByLeft()
+	{
+		return $this->category->orderLeft()->get()->all();
 	}
 
 	public function getExtras()

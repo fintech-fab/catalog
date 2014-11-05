@@ -5,6 +5,7 @@ AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', functio
 	this.rootScopeEl = null;
 
 	this.getTree = function (result) {
+		this.clear();
 		http.loadTree(function (res) {
 			result(res.data);
 		});
@@ -75,6 +76,11 @@ AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', functio
 
 	this.getRootChild = function () {
 		return this.treeScope.$$childHead.$nodesScope.$modelValue;
+	};
+
+	this.clear = function () {
+		this.treeScope = null;
+		this.rootScopeEl = null;
 	};
 
 }];

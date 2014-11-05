@@ -1,0 +1,39 @@
+<div class="container">
+
+	<div class="row">
+		<div class="col-md-9">
+			<div class="clear clearfix"></div>
+
+			<script type="text/ng-template" id="nodes_renderer.html">
+				<div ng-class="{'enabled-false': !node.enabled, 'deleted-true': node.deleted}">
+					[{{ node.id }}] {{node.name}}
+				</div>
+			</script>
+			<div id="product-list-root">
+				<div cg-busy="loadingOverlay">
+					<ul ng-model="data">
+						<li ng-repeat="node in data" ng-include="'nodes_renderer.html'"></li>
+					</ul>
+				</div>
+			</div>
+		</div>
+
+		<div class="col-md-3" ng-controller="productListFilter">
+			<form novalidate class="form-vertical" ng-submit="save()">
+				<div class="form-group">
+					<label for="filter-categories" class="col-md-12 control-label">Category</label>
+
+					<div class="col-md-10">
+						<input type="text" class="form-control" ng-model="filter.categories" id="filter-categories" disabled />
+					</div>
+					<div class="col-md-2">
+						<button class="btn btn-default btn-xs pull-left" ng-click="showSelectCategoryForm()">
+							<i class="fa fa-eye"></i></button>
+					</div>
+				</div>
+			</form>
+		</div>
+
+	</div>
+
+</div>

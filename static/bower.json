@@ -26,6 +26,7 @@
   "dependencies": {
 	  "jquery": "*",
 	  "angular": "*",
+	  "angular-route": "*",
 	  "angular-ui-tree": "*",
 	  "bootstrap": "*",
 	  "angular-strap": "*",

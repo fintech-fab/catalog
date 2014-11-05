@@ -132,3 +132,98 @@ form div.error {
 .test {
 	color: #000011;
 }
+
+#product-list-root ul,
+#product-list-root li {
+	list-style: none;
+}
+
+#product-list-root li div.ng-binding {
+	background: #f8faff;
+	border-top: 0;
+	border-right: 0;
+	border-left: 1px solid lightgray;
+	border-bottom: 1px solid grey;
+	padding: 3px 3px;
+	font-weight: normal;
+}
+
+form .form-control {
+	padding: 3px;
+	height: 30px;
+}
+
+#modalCategorySelect ul,
+#modalCategorySelect li {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+#modalCategorySelect div {
+	padding: 2px 2px;
+	font-weight: normal;
+	font-size: .9em;
+	height: 24px;
+}
+
+#modalCategorySelect div a.btn-xs {
+	padding: 2px;
+	margin-right: 10px;
+}
+
+#modalCategorySelect div a {
+	color: inherit;
+	text-decoration: none;
+}
+
+#modalCategorySelect div a:hover {
+	color: #008cba;
+}
+
+#modalCategorySelect div a.checked {
+	color: #008cba;
+}
+
+#modalCategorySelect div a.checked:hover {
+	color: #000000;
+	text-decoration: none;
+}
+
+#modalCategorySelect .pl0 {
+	padding-left: 0;
+}
+
+#modalCategorySelect .pl1 {
+	padding-left: 20px;
+}
+
+#modalCategorySelect .pl2 {
+	padding-left: 40px;
+}
+
+#modalCategorySelect .pl3 {
+	padding-left: 60px;
+}
+
+#modalCategorySelect .pl4 {
+	padding-left: 80px;
+}
+
+#modalCategorySelect .pl5 {
+	padding-left: 100px;
+}
+
+#modalCategorySelect .pl6 {
+	padding-left: 120px;
+}
+
+#modalCategorySelect .pl7 {
+	padding-left: 140px;
+}
+
+#modalCategorySelect .pl8 {
+	padding-left: 160px;
+}
+
+

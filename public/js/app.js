@@ -125,6 +125,103 @@ AppExtends.form = function (params) {
 
 	}
 };
+AppServices.treeServer = function ($http) {
+
+	this.loadTree = function (callback) {
+		$http.get('rest/categories/tree').then(callback);
+	};
+
+	this.removeById = function (id, callback) {
+		$http.post('category/remove', {id: id}).success(callback);
+	};
+
+	this.enableById = function (id, callback) {
+		this.overlay.over(
+			$http.post('category/enable', {id: id}).success(callback)
+		);
+	};
+
+	this.findTags = function (term) {
+		return $http.get('category/tags/autocomplete?term=' + term);
+	};
+
+	this.createCategory = function (category, callback) {
+		$http.post('category/create', category).success(callback);
+	};
+
+	this.getById = function (id, callback) {
+		$http.get('rest/categories/item/' + id).then(callback);
+	};
+
+	this.updateCategory = function (id, category, callback) {
+		$http.post('category/update/' + id, category).success(callback);
+	};
+
+	this.dragDropped = function (post, success, error) {
+		this.overlay.over(
+			$http.post('category/move/after', post).success(success).error(error)
+		);
+	};
+
+	this.overlay = function () {
+
+		var scope;
+
+		return {
+			/**
+			 * @param rootScope function, must returns tree root scope
+			 */
+			set: function (rootScope) {
+				scope = rootScope;
+			},
+			/**
+			 * @param request promise
+			 */
+			over: function (request) {
+				// cg-busy="loadingOverlay" called in directive
+				scope().loadingOverlay = request;
+			}
+		};
+
+	}();
+
+};
+
+AppServices.productServer = function ($http) {
+
+	this.loadList = function (params, callback) {
+		$http.post('product/list', params).success(callback);
+	};
+
+
+	this.loadCategories = function (callback) {
+		$http.get('category/tree/simple').success(callback);
+	};
+
+	this.overlay = function () {
+
+		var scope;
+
+		return {
+			/**
+			 * @param rootScope function, must returns tree root scope
+			 */
+			set: function (rootScope) {
+				scope = rootScope;
+			},
+			/**
+			 * @param request promise
+			 */
+			over: function (request) {
+				// cg-busy="loadingOverlay" called in directive
+				scope().loadingOverlay = request;
+			}
+		};
+
+	}();
+
+};
+
 AppServices.treeDragDrop = ['treeServer', function (http) {
 
 	this.scope = null;
@@ -200,6 +297,7 @@ AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', functio
 	this.rootScopeEl = null;
 
 	this.getTree = function (result) {
+		this.clear();
 		http.loadTree(function (res) {
 			result(res.data);
 		});
@@ -272,6 +370,11 @@ AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', functio
 		return this.treeScope.$$childHead.$nodesScope.$modelValue;
 	};
 
+	this.clear = function () {
+		this.treeScope = null;
+		this.rootScopeEl = null;
+	};
+
 }];
 
 
@@ -312,67 +415,71 @@ AppServices.treeNode = ['$http', 'treeInit', function ($http, treeInit) {
 
 }];
 
-AppServices.treeServer = function ($http) {
+AppServices.productFilterStorage = ['localStorageService', function (storage) {
 
-	this.loadTree = function (callback) {
-		$http.get('rest/categories/tree').then(callback);
-	};
+	return {
 
-	this.removeById = function (id, callback) {
-		$http.post('category/remove', {id: id}).success(callback);
-	};
+		replace: function (sid, value, checked) {
 
-	this.enableById = function (id, callback) {
-		this.overlay.over(
-			$http.post('category/enable', {id: id}).success(callback)
-		);
-	};
-
-	this.findTags = function (term) {
-		return $http.get('category/tags/autocomplete?term=' + term);
-	};
-
-	this.createCategory = function (category, callback) {
-		$http.post('category/create', category).success(callback);
-	};
-
-	this.getById = function (id, callback) {
-		$http.get('rest/categories/item/' + id).then(callback);
-	};
-
-	this.updateCategory = function (id, category, callback) {
-		$http.post('category/update/' + id, category).success(callback);
-	};
-
-	this.dragDropped = function (post, success, error) {
-		this.overlay.over(
-			$http.post('category/move/after', post).success(success).error(error)
-		);
-	};
-
-	this.overlay = function () {
-
-		var scope;
-
-		return {
-			/**
-			 * @param rootScope function, must returns tree root scope
-			 */
-			set: function (rootScope) {
-				scope = rootScope;
-			},
-			/**
-			 * @param request promise
-			 */
-			over: function (request) {
-				// cg-busy="loadingOverlay" called in directive
-				scope().loadingOverlay = request;
+			value = value || null;
+			if (null === value) {
+				return;
 			}
-		};
 
-	}();
+			var
+				list = this.get(sid) || [],
+				exists = list.indexOf(value);
 
-};
+			if (exists >= 0) {
+				list.splice(exists, 1);
+			}
+
+			if (checked) {
+				list.push(value);
+			}
+
+			this.set(sid, list);
+
+		},
+
+		get: function (sid) {
+			sid = 'PFS.' + sid;
+			return storage.get(sid);
+		},
+
+		set: function (sid, value) {
+			sid = 'PFS.' + sid;
+			return storage.set(sid, value);
+		},
+
+		checked: function (sid, value) {
+			var list = this.get(sid) || [];
+			return list.indexOf(value) >= 0;
+		},
+
+		setChecked2List: function (sid, list) {
+			var storageList = this.get(sid);
+			for (var i = 0, qnt = list.length; i < qnt; i++) {
+				list[i].checked = (storageList.indexOf(list[i].id) >= 0);
+			}
+		},
+
+		post: function (fields) {
+			fields = fields || [];
+			var post = {};
+			for (var i = 0, qnt = fields.length; i < qnt; i++) {
+				post[fields[i]] = this.get(fields[i]);
+			}
+			return post;
+		},
+
+		initList: function (sid, value) {
+			this.set(sid, [value]);
+		}
+
+	};
+
+}];
 
 AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, node) {
 
@@ -604,18 +711,118 @@ AppControllers.modalCategoryNew = ['$scope', 'treeServer', 'treeNode', function 
 
 }];
 
+AppControllers.modalCategorySelect = ['$scope', 'productServer', function ($scope, http) {
+
+	$scope.categories = [];
+	http.loadCategories(function (data) {
+		$scope.categories = data;
+		$scope.$emit('modalCategorySelectLoaded', $scope.categories);
+	});
+
+	$scope.toggleItem = function (id) {
+		var node;
+		for (var i = 0, qnt = this.categories.length; i < qnt; i++) {
+			if (this.categories[i].id == id) {
+				node = this.categories[i];
+			}
+		}
+		node.checked = !node.checked;
+		$scope.$emit('modalCategorySelectToggle', [node.id, node.checked]);
+	};
+
+}];
+AppControllers.productListEdit = ['$scope', 'productServer', 'productFilterStorage', function ($scope, http, filter) {
+
+	$scope.data = [];
+	$scope.load = function (params) {
+		params = params || [];
+		http.loadList(filter.post(params), function (result) {
+			$scope.data = result.data;
+		});
+	};
+
+	$scope.$on('productListFilterChanged', function (event, params) {
+		$scope.load(params);
+	});
+
+}];
+AppControllers.productListFilter = ['$scope', '$routeParams', '$modal', 'productFilterStorage', function ($scope, $routeParams, $modal, storage) {
+
+
+	$scope.fields = [
+		'categories'
+	];
+
+
+	$scope.createDefaultFilter = function () {
+		$routeParams.cid && storage.initList('categories', $routeParams.cid);
+	};
+	$scope.createDefaultFilter();
+
+
+	$scope.emitChanged = function () {
+		this.$emit('productListFilterChanged', this.fields);
+	};
+	$scope.emitChanged();
+
+
+	$scope.showSelectCategoryForm = function () {
+
+		$scope.modalEditForm = $modal({
+			title: 'Select a category',
+			contentTemplate: 'template/category.select',
+			template: 'template/category.modal_right',
+			scope: $scope,
+			show: true
+		});
+
+	};
+
+	$scope.$on('modalCategorySelectToggle', function (event, args) {
+		var
+			nodeId = args[0],
+			checked = args[1];
+		storage.replace('categories', nodeId, checked);
+		$scope.emitChanged();
+	});
+
+	$scope.$on('modalCategorySelectLoaded', function (event, list) {
+		storage.setChecked2List('categories', list);
+	});
+
+}];
 (function () {
 	'use strict';
 
-	var App = angular.module('treeApp', ['ui.tree', 'mgcrea.ngStrap', 'cgBusy', 'ngTagsInput', 'LocalStorageModule']);
+	var App = angular.module('treeApp', ['ui.tree', 'mgcrea.ngStrap', 'cgBusy', 'ngTagsInput', 'LocalStorageModule', 'ngRoute']);
 
+	App.config(function ($routeProvider) {
+		$routeProvider.
+			when('/', {
+				templateUrl: 'template/category.index',
+				controller: 'categoryTreeEdit'
+			}).
+			when('/products/:cid', {
+				templateUrl: 'template/product.index',
+				controller: 'productListEdit'
+			}).
+			otherwise({
+				redirectTo: '/'
+			});
+	});
+
+	App.service('productServer', AppServices.productServer);
 	App.service('treeServer', AppServices.treeServer);
 	App.service('treeInit', AppServices.treeInit);
 	App.service('treeDragDrop', AppServices.treeDragDrop);
 	App.service('treeNode', AppServices.treeNode);
+	App.service('productFilterStorage', AppServices.productFilterStorage);
 
 	App.controller('modalCategoryNew', AppControllers.modalCategoryNew);
 	App.controller('modalCategoryEdit', AppControllers.modalCategoryEdit);
+	App.controller('modalCategorySelect', AppControllers.modalCategorySelect);
 	App.controller('categoryTreeEdit', AppControllers.categoryTreeEdit);
+	App.controller('productListEdit', AppControllers.productListEdit);
+	App.controller('productListFilter', AppControllers.productListFilter);
 
 })();

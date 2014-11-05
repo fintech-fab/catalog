@@ -116,7 +116,18 @@ class ProductComponent
 
 		$this->ob2id($categories);
 		$this->categoryRel->addProduct2Category($this->get()->id, $categories);
+
 		return $this;
+
+	}
+
+	public function categoryQuantity()
+	{
+
+		return $this->categoryRel
+			->selectRaw("category_id, COUNT(*) as cnt")
+			->groupBy('category_id')
+			->get()->lists('cnt', 'category_id');
 
 	}
 
@@ -142,6 +153,7 @@ class ProductComponent
 			$this->categoryRel->removeProductFromCategory($id, $category_id);
 		}
 		$this->unlock();
+
 		return $this;
 
 	}
@@ -156,6 +168,7 @@ class ProductComponent
 
 		$this->ob2id($categories);
 		$this->categoryRel->clearCategory($categories);
+
 		return $this;
 
 	}
@@ -446,6 +459,27 @@ class ProductComponent
 				->add2Category($categoryToId);
 		}
 
+	}
+
+
+	public function list2Array()
+	{
+		$list = $this->product->paginate(30);
+		$result = [];
+		foreach ($list as $item) {
+			$result[] = [
+				'id'   => $item->id,
+				'name' => $item->name,
+			];
+		}
+
+		return [
+			'data' => $result,
+			'page' => [
+				'page'  => $list->getCurrentPage(),
+				'total' => $list->getTotal(),
+			]
+		];
 	}
 
 	/**
