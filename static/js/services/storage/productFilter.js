@@ -43,7 +43,7 @@ AppServices.productFilterStorage = ['localStorageService', function (storage) {
 		setChecked2List: function (sid, list) {
 			var storageList = this.get(sid);
 			for (var i = 0, qnt = list.length; i < qnt; i++) {
-				list[i].checked = (storageList.indexOf(list[i].id) >= 0);
+				list[i].$checked = (storageList && storageList.indexOf(list[i].id) >= 0);
 			}
 		},
 

@@ -9,9 +9,9 @@ AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$mod
 	storage.set('tags', $routeParams.tags && $routeParams.tags.split(',') || null);
 	storage.set('categories', $routeParams.categories && $routeParams.categories.split(',') || null);
 
-	$scope.emitChanged = function (callback) {
-		callback = typeof callback === 'function'? callback : function(){};
-		this.$emit('productListFilterChanged', [this.fields, callback]);
+
+	$scope.emitChanged = function () {
+		return $scope.$parent.productListFilterChanged(this.fields);
 	};
 	$scope.emitChanged();
 
@@ -52,9 +52,9 @@ AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$mod
 		storage.setChecked2List(name, list);
 	};
 
-	$scope.itemsSelectToggle = function(name, id, checked, callback){
+	$scope.itemsSelectToggle = function (name, id, checked) {
 		storage.replace(name, id, checked);
-		$scope.emitChanged(callback);
+		return $scope.emitChanged();
 	};
 
 

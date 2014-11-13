@@ -190,8 +190,8 @@ AppServices.treeServer = function ($http) {
 
 AppServices.productServer = function ($http) {
 
-	this.loadList = function (params, callback) {
-		$http.post('product/list', params).success(callback);
+	this.loadList = function (params) {
+		return $http.post('product/list', params);
 	};
 
 	this.loadCategories = function (callback) {
@@ -464,7 +464,7 @@ AppServices.productFilterStorage = ['localStorageService', function (storage) {
 		setChecked2List: function (sid, list) {
 			var storageList = this.get(sid);
 			for (var i = 0, qnt = list.length; i < qnt; i++) {
-				list[i].checked = (storageList.indexOf(list[i].id) >= 0);
+				list[i].$checked = (storageList && storageList.indexOf(list[i].id) >= 0);
 			}
 		},
 
@@ -725,88 +725,131 @@ AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 
 	var $source = $scope.$parent;
 
-	$scope.list = [];
-	$scope.index = [];
-	$scope.term = {
-		busy: false,
-		search: '',
-		value: '',
-		selected: false
-	};
+	$scope.value = '';
+	$scope.selected = false;
 	$scope.busy = false;
+
+	$scope.list = function (s) {
+
+		var
+			items = [],
+			index = [],
+			search = '';
+
+		return {
+			set: function (data) {
+				items = data;
+				search = data;
+				this.index();
+			},
+			get: function (i) {
+				i = (i === 0 || i > 0) ? i : null;
+				if (null === i) {
+					return items;
+				} else {
+					return items[i];
+				}
+			},
+			index: function () {
+				for (var i = 0, qnt = items.length; i < qnt; i++) {
+					index[items[i].id] = i;
+				}
+			},
+			node: function (id) {
+				return items[index[id]];
+			},
+			busy: function () {
+				s.busy = true;
+			},
+			free: function () {
+				s.busy = false;
+			},
+			isBusy: function () {
+				return s.busy;
+			},
+			value: function () {
+				return s.value;
+			},
+			search: function (val) {
+				if (typeof val !== 'undefined') {
+					search = val;
+				}
+				return search;
+			},
+			selected: function () {
+				return s.selected;
+			},
+			hidden: function (checked, needle) {
+				var term = this.value().toUpperCase();
+				needle = needle.toUpperCase();
+				return (
+				(term.length > 0 && needle.indexOf(term) < 0)
+				||
+				(this.selected() && !checked)
+				);
+			}
+		};
+
+	}($scope);
 
 	var entity = $source.selectListEntity;
 
 	$source.getCollection(entity, function (data) {
-		$scope.list = data;
-		$scope.search = data;
-		createIndex();
-		$source.itemsSelectLoaded(entity, $scope.list);
+		$scope.list.set(data);
+		$source.itemsSelectLoaded(entity, $scope.list.get());
 	});
 
 	$scope.toggleItem = function (id) {
-		var node = this.list[this.index[id]];
-		node.checked = !node.checked;
-		$scope.busy = true;
-		$source.itemsSelectToggle(entity, node.id, node.checked, function(){
-			$scope.busy = false;
-		});
+		var node = this.list.node(id);
+		node.$checked = !node.$checked;
+		this.list.busy();
+		$source
+			.itemsSelectToggle(entity, node.id, node.$checked)
+			.then(function () {
+				$scope.list.free();
+			});
 	};
 
 
-	$scope.filter = function(){
+	$scope.filter = function () {
 
-		if(this.term.busy && this.term.value !== this.term.search){
-			this.term.busy = false;
+		if (this.list.isBusy() && this.list.value() !== this.list.search()) {
+			this.list.free();
 			return true;
 		}
 
-		showByTerm();
+		showByTerm(this.list);
 
 		return true;
 
 	};
 
-	function createIndex(){
-		for (var i = 0, qnt = $scope.list.length; i < qnt; i++) {
-			$scope.index[$scope.list[i].id] = i;
-		}
-	}
-
-	function showByTerm(){
-		$scope.term.busy = true;
-		var node,
-			name,
-			selected = $scope.term.selected,
-			term = $scope.term.value.toUpperCase();
-		$scope.term.search = $scope.term.value;
-		for (var i = 0, qnt = $scope.list.length; i < qnt; i++) {
-			if(!$scope.term.busy){
-				showByTerm();
+	function showByTerm(l) {
+		l.busy();
+		var node;
+		l.search(l.value());
+		for (var i = 0, qnt = l.get().length; i < qnt; i++) {
+			if (!l.isBusy()) {
+				showByTerm(l);
 				return true;
 			}
-			node = $scope.list[i];
-			name = node.name.toUpperCase();
-			node.hidden = (
-				(term.length > 0 && name.indexOf(term) < 0)
-				||
-				(selected && !node.checked)
-			);
-			if(!node.hidden){
+			node = l.get(i);
+			node.$hidden = l.hidden(node.$checked, node.name);
+			if (!node.$hidden) {
 				showByParent(node.parent_id);
 			}
 		}
-		$scope.term.busy = false;
-		$scope.term.search = '';
+		l.free();
+		l.search('');
 	}
 
-	function showByParent(id){
-		var node = $scope.list[$scope.index[id]];
-		if(!node){
+	function showByParent(id) {
+		var node = $scope.list.node(id);
+		if (!node) {
 			return;
 		}
-		node.hidden = false;
-		if(node.parent_id > 0){
+		node.$hidden = false;
+		if (node.parent_id > 0) {
 			showByParent(node.parent_id)
 		}
 	}
@@ -815,21 +858,24 @@ AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServer', 'productFilterStorage', function ($scope, $route, $location, http, filter) {
 
 	$scope.data = [];
-	$scope.load = function (params, callback) {
+	$scope.load = function (params) {
 		params = params || [];
-
 		var values = filter.post(params);
 		$scope.changeUrl(values);
-		http.loadList(values, function (result) {
+		var promise = http.loadList(values);
+		promise.success(function (result) {
 			$scope.data = result.data;
-			callback();
 		});
+		return promise;
 	};
 
 	$scope.changeUrl = function (values) {
 		var url = $location.path() + '?';
 		for (var key in values) {
-			if (values[key].length == 0) {
+			if (!values.hasOwnProperty(key)) {
+				continue;
+			}
+			if (!values[key] || (values[key] && values[key].length == 0)) {
 				continue;
 			}
 			url = url + key + '=' + values[key] + '&';
@@ -837,9 +883,9 @@ AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServe
 		$location.url(url, false);
 	};
 
-	$scope.$on('productListFilterChanged', function (event, args) {
-		$scope.load(args[0], args[1]);
-	});
+	$scope.productListFilterChanged = function (fields) {
+		return $scope.load(fields);
+	};
 
 }];
 AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$modal', 'productFilterStorage', 'productServer', function ($scope, $routeParams, $location, $modal, storage, http) {
@@ -853,9 +899,9 @@ AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$mod
 	storage.set('tags', $routeParams.tags && $routeParams.tags.split(',') || null);
 	storage.set('categories', $routeParams.categories && $routeParams.categories.split(',') || null);
 
-	$scope.emitChanged = function (callback) {
-		callback = typeof callback === 'function'? callback : function(){};
-		this.$emit('productListFilterChanged', [this.fields, callback]);
+
+	$scope.emitChanged = function () {
+		return $scope.$parent.productListFilterChanged(this.fields);
 	};
 	$scope.emitChanged();
 
@@ -896,9 +942,9 @@ AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$mod
 		storage.setChecked2List(name, list);
 	};
 
-	$scope.itemsSelectToggle = function(name, id, checked, callback){
+	$scope.itemsSelectToggle = function (name, id, checked) {
 		storage.replace(name, id, checked);
-		$scope.emitChanged(callback);
+		return $scope.emitChanged();
 	};
 
 

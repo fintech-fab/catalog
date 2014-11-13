@@ -1,21 +1,24 @@
 AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServer', 'productFilterStorage', function ($scope, $route, $location, http, filter) {
 
 	$scope.data = [];
-	$scope.load = function (params, callback) {
+	$scope.load = function (params) {
 		params = params || [];
-
 		var values = filter.post(params);
 		$scope.changeUrl(values);
-		http.loadList(values, function (result) {
+		var promise = http.loadList(values);
+		promise.success(function (result) {
 			$scope.data = result.data;
-			callback();
 		});
+		return promise;
 	};
 
 	$scope.changeUrl = function (values) {
 		var url = $location.path() + '?';
 		for (var key in values) {
-			if (values[key].length == 0) {
+			if (!values.hasOwnProperty(key)) {
+				continue;
+			}
+			if (!values[key] || (values[key] && values[key].length == 0)) {
 				continue;
 			}
 			url = url + key + '=' + values[key] + '&';
@@ -23,8 +26,8 @@ AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServe
 		$location.url(url, false);
 	};
 
-	$scope.$on('productListFilterChanged', function (event, args) {
-		$scope.load(args[0], args[1]);
-	});
+	$scope.productListFilterChanged = function (fields) {
+		return $scope.load(fields);
+	};
 
 }];

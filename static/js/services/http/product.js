@@ -1,7 +1,7 @@
 AppServices.productServer = function ($http) {
 
-	this.loadList = function (params, callback) {
-		$http.post('product/list', params).success(callback);
+	this.loadList = function (params) {
+		return $http.post('product/list', params);
 	};
 
 	this.loadCategories = function (callback) {

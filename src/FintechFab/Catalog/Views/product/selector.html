@@ -1,24 +1,25 @@
 <div id="modalCategorySelect">
 
+	<div ng-show="busy" style="position: absolute; height: 100%; width: 100%;background-color: #808080; opacity: 0.1; z-index: 999;"></div>
+
 	<div class="row" style="display: block;height: 100%;">
 
-		<div ng-show="busy" style="position: fixed; height: 100%; width: 100%;background-color: #808080; opacity: 0.1; z-index: 999;"></div>
 
 		<form ng-submit="filter()">
 
 			<div class="form-group">
-				<input type="checkbox" ng-model="term.selected" ng-change="filter()" title="selected only"/> selected only
-				<input type="text" ng-model="term.value" ng-change="filter()" id="ngChange" class="form-control" placeholder="search by any part of name" title="search by any part of name" />
+				<input type="checkbox" ng-model="selected" ng-change="filter()" title="selected only" /> selected only
+				<input type="text" ng-model="value" ng-change="filter()" id="ngChange" class="form-control" placeholder="search by any part of name" title="search by any part of name" />
 			</div>
 			<div class="clearfix clear"></div>
 
 			<div class="form-group">
 
 				<ul class="list">
-					<li ng-repeat="node in list">
-						<div class="pl{{node.level}}" ng-class="{deleted: node.deleted, disabled: node.disabled}" ng-show="!node.hidden">
-							<a class="btn btn-xs pull-left select-box" ng-click="toggleItem(node.id)" ng-class="{checked: node.checked}">
-								<i class="fa" ng-class="{'fa-check-square': node.checked, 'fa-square-o': !node.checked}"></i>
+					<li ng-repeat="node in list.get()">
+						<div class="pl{{node.level}}" ng-class="{deleted: node.deleted, disabled: node.disabled}" ng-show="!node.$hidden">
+							<a class="btn btn-xs pull-left select-box" ng-click="toggleItem(node.id)" ng-class="{checked: node.$checked}">
+								<i class="fa" ng-class="{'fa-check-square': node.$checked, 'fa-square-o': !node.$checked}"></i>
 								{{node.name}}
 							</a>
 						</div>
