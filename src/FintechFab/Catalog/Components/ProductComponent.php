@@ -461,10 +461,13 @@ class ProductComponent
 
 	}
 
-
-	public function list2Array()
+	/**
+	 * @param \Illuminate\Pagination\Paginator $list
+	 *
+	 * @return array
+	 */
+	public function list2Array($list)
 	{
-		$list = $this->product->paginate(30);
 		$result = [];
 		foreach ($list as $item) {
 			$result[] = [
@@ -480,6 +483,14 @@ class ProductComponent
 				'total' => $list->getTotal(),
 			]
 		];
+	}
+
+	/**
+	 * @return ProductTag[]
+	 */
+	public function tagList()
+	{
+		return $this->tag->get()->all('id', 'name');
 	}
 
 	/**

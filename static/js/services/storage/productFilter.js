@@ -57,7 +57,7 @@ AppServices.productFilterStorage = ['localStorageService', function (storage) {
 		},
 
 		initList: function (sid, value) {
-			this.set(sid, [value]);
+			this.set(sid, value);
 		}
 
 	};

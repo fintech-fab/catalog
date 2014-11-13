@@ -90,8 +90,9 @@ class CatalogServiceProvider extends ServiceProvider
 
 	private function routes()
 	{
-		Route::group(array('prefix' => 'ff-cat/product/list',), function () {
-			Route::post('/', ProductController::class . '@index');
+		Route::group(array('prefix' => 'ff-cat/product',), function () {
+			Route::post('/list', ProductController::class . '@index');
+			Route::get('/tags', ProductController::class . '@tags');
 		});
 
 		Route::group(array('prefix' => 'ff-cat',), function () {

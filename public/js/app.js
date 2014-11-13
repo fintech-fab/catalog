@@ -1,6 +1,7 @@
 var AppControllers = {};
 var AppServices = {};
 var AppExtends = {};
+var AppDirectives = {};
 AppExtends.alerts = function () {
 
 	var opened = undefined;
@@ -193,9 +194,12 @@ AppServices.productServer = function ($http) {
 		$http.post('product/list', params).success(callback);
 	};
 
-
 	this.loadCategories = function (callback) {
 		$http.get('category/tree/simple').success(callback);
+	};
+
+	this.loadTags = function (callback) {
+		$http.get('product/tags').success(callback);
 	};
 
 	this.overlay = function () {
@@ -474,13 +478,19 @@ AppServices.productFilterStorage = ['localStorageService', function (storage) {
 		},
 
 		initList: function (sid, value) {
-			this.set(sid, [value]);
+			this.set(sid, value);
 		}
 
 	};
 
 }];
 
+AppDirectives.selectListCallback = function() {
+	return {
+		templateUrl: 'template/product.selector',
+		controller: AppControllers.modalItemsSelect
+	};
+};
 AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, node) {
 
 	$scope.treeOptions = {
@@ -711,84 +721,187 @@ AppControllers.modalCategoryNew = ['$scope', 'treeServer', 'treeNode', function 
 
 }];
 
-AppControllers.modalCategorySelect = ['$scope', 'productServer', function ($scope, http) {
+AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 
-	$scope.categories = [];
-	http.loadCategories(function (data) {
-		$scope.categories = data;
-		$scope.$emit('modalCategorySelectLoaded', $scope.categories);
+	var $source = $scope.$parent;
+
+	$scope.list = [];
+	$scope.index = [];
+	$scope.term = {
+		busy: false,
+		search: '',
+		value: '',
+		selected: false
+	};
+	$scope.busy = false;
+
+	var entity = $source.selectListEntity;
+
+	$source.getCollection(entity, function (data) {
+		$scope.list = data;
+		$scope.search = data;
+		createIndex();
+		$source.itemsSelectLoaded(entity, $scope.list);
 	});
 
 	$scope.toggleItem = function (id) {
-		var node;
-		for (var i = 0, qnt = this.categories.length; i < qnt; i++) {
-			if (this.categories[i].id == id) {
-				node = this.categories[i];
-			}
-		}
+		var node = this.list[this.index[id]];
 		node.checked = !node.checked;
-		$scope.$emit('modalCategorySelectToggle', [node.id, node.checked]);
-	};
-
-}];
-AppControllers.productListEdit = ['$scope', 'productServer', 'productFilterStorage', function ($scope, http, filter) {
-
-	$scope.data = [];
-	$scope.load = function (params) {
-		params = params || [];
-		http.loadList(filter.post(params), function (result) {
-			$scope.data = result.data;
+		$scope.busy = true;
+		$source.itemsSelectToggle(entity, node.id, node.checked, function(){
+			$scope.busy = false;
 		});
 	};
 
-	$scope.$on('productListFilterChanged', function (event, params) {
-		$scope.load(params);
+
+	$scope.filter = function(){
+
+		if(this.term.busy && this.term.value !== this.term.search){
+			this.term.busy = false;
+			return true;
+		}
+
+		showByTerm();
+
+		return true;
+
+	};
+
+	function createIndex(){
+		for (var i = 0, qnt = $scope.list.length; i < qnt; i++) {
+			$scope.index[$scope.list[i].id] = i;
+		}
+	}
+
+	function showByTerm(){
+		$scope.term.busy = true;
+		var node,
+			name,
+			selected = $scope.term.selected,
+			term = $scope.term.value.toUpperCase();
+		$scope.term.search = $scope.term.value;
+		for (var i = 0, qnt = $scope.list.length; i < qnt; i++) {
+			if(!$scope.term.busy){
+				showByTerm();
+				return true;
+			}
+			node = $scope.list[i];
+			name = node.name.toUpperCase();
+			node.hidden = (
+				(term.length > 0 && name.indexOf(term) < 0)
+				||
+				(selected && !node.checked)
+			);
+			if(!node.hidden){
+				showByParent(node.parent_id);
+			}
+		}
+		$scope.term.busy = false;
+		$scope.term.search = '';
+	}
+
+	function showByParent(id){
+		var node = $scope.list[$scope.index[id]];
+		if(!node){
+			return;
+		}
+		node.hidden = false;
+		if(node.parent_id > 0){
+			showByParent(node.parent_id)
+		}
+	}
+
+}];
+AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServer', 'productFilterStorage', function ($scope, $route, $location, http, filter) {
+
+	$scope.data = [];
+	$scope.load = function (params, callback) {
+		params = params || [];
+
+		var values = filter.post(params);
+		$scope.changeUrl(values);
+		http.loadList(values, function (result) {
+			$scope.data = result.data;
+			callback();
+		});
+	};
+
+	$scope.changeUrl = function (values) {
+		var url = $location.path() + '?';
+		for (var key in values) {
+			if (values[key].length == 0) {
+				continue;
+			}
+			url = url + key + '=' + values[key] + '&';
+		}
+		$location.url(url, false);
+	};
+
+	$scope.$on('productListFilterChanged', function (event, args) {
+		$scope.load(args[0], args[1]);
 	});
 
 }];
-AppControllers.productListFilter = ['$scope', '$routeParams', '$modal', 'productFilterStorage', function ($scope, $routeParams, $modal, storage) {
+AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$modal', 'productFilterStorage', 'productServer', function ($scope, $routeParams, $location, $modal, storage, http) {
 
 
 	$scope.fields = [
-		'categories'
+		'categories',
+		'tags'
 	];
 
+	storage.set('tags', $routeParams.tags && $routeParams.tags.split(',') || null);
+	storage.set('categories', $routeParams.categories && $routeParams.categories.split(',') || null);
 
-	$scope.createDefaultFilter = function () {
-		$routeParams.cid && storage.initList('categories', $routeParams.cid);
-	};
-	$scope.createDefaultFilter();
-
-
-	$scope.emitChanged = function () {
-		this.$emit('productListFilterChanged', this.fields);
+	$scope.emitChanged = function (callback) {
+		callback = typeof callback === 'function'? callback : function(){};
+		this.$emit('productListFilterChanged', [this.fields, callback]);
 	};
 	$scope.emitChanged();
 
 
 	$scope.showSelectCategoryForm = function () {
+		$scope.showFilterForm('categories', 'Select a category');
+	};
 
+	$scope.showSelectTagsForm = function () {
+		$scope.showFilterForm('tags', 'Check a tags');
+	};
+
+	$scope.showFilterForm = function(entity, title){
+		$scope.selectListEntity = entity;
 		$scope.modalEditForm = $modal({
-			title: 'Select a category',
-			contentTemplate: 'template/category.select',
-			template: 'template/category.modal_right',
+			title: title,
+			template: 'template/product.select-list-callback',
 			scope: $scope,
 			show: true
 		});
-
 	};
 
-	$scope.$on('modalCategorySelectToggle', function (event, args) {
-		var
-			nodeId = args[0],
-			checked = args[1];
-		storage.replace('categories', nodeId, checked);
-		$scope.emitChanged();
-	});
+	$scope.getCollection = function(name, callback){
+		switch (name){
+			case 'categories':
+				http.loadCategories(callback);
+				break;
+			case 'tags':
+				http.loadTags(callback);
+				break;
+			default:
+				callback(null);
+				break;
+		}
+	};
 
-	$scope.$on('modalCategorySelectLoaded', function (event, list) {
-		storage.setChecked2List('categories', list);
-	});
+	$scope.itemsSelectLoaded = function(name, list){
+		storage.setChecked2List(name, list);
+	};
+
+	$scope.itemsSelectToggle = function(name, id, checked, callback){
+		storage.replace(name, id, checked);
+		$scope.emitChanged(callback);
+	};
+
+
 
 }];
 (function () {
@@ -796,13 +909,27 @@ AppControllers.productListFilter = ['$scope', '$routeParams', '$modal', 'product
 
 	var App = angular.module('treeApp', ['ui.tree', 'mgcrea.ngStrap', 'cgBusy', 'ngTagsInput', 'LocalStorageModule', 'ngRoute']);
 
+	App.run(['$route', '$rootScope', '$location', function ($route, $rootScope, $location) {
+		var original = $location.url;
+		$location.url = function (path, reload) {
+			if (reload === false) {
+				var lastRoute = $route.current;
+				var un = $rootScope.$on('$locationChangeSuccess', function () {
+					$route.current = lastRoute;
+					un();
+				});
+			}
+			return original.apply($location, [path]);
+		};
+	}]);
+
 	App.config(function ($routeProvider) {
 		$routeProvider.
 			when('/', {
 				templateUrl: 'template/category.index',
 				controller: 'categoryTreeEdit'
 			}).
-			when('/products/:cid', {
+			when('/products', {
 				templateUrl: 'template/product.index',
 				controller: 'productListEdit'
 			}).
@@ -820,9 +947,9 @@ AppControllers.productListFilter = ['$scope', '$routeParams', '$modal', 'product
 
 	App.controller('modalCategoryNew', AppControllers.modalCategoryNew);
 	App.controller('modalCategoryEdit', AppControllers.modalCategoryEdit);
-	App.controller('modalCategorySelect', AppControllers.modalCategorySelect);
 	App.controller('categoryTreeEdit', AppControllers.categoryTreeEdit);
 	App.controller('productListEdit', AppControllers.productListEdit);
-	App.controller('productListFilter', AppControllers.productListFilter);
+	App.controller('productListFilter', AppControllers.productListFilter)
+		.directive('selectListCallback', AppDirectives.selectListCallback );
 
 })();

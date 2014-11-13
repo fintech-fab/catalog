@@ -1,6 +1,12 @@
 <div class="container">
 
 	<div class="row">
+		<h4 class="col-md-9">
+			Products </h4>
+		<h4 class="col-md-3">
+			Filter parameters </h4>
+	</div>
+	<div class="row">
 		<div class="col-md-9">
 			<div class="clear clearfix"></div>
 
@@ -19,18 +25,45 @@
 		</div>
 
 		<div class="col-md-3" ng-controller="productListFilter">
-			<form novalidate class="form-vertical" ng-submit="save()">
-				<div class="form-group">
-					<label for="filter-categories" class="col-md-12 control-label">Category</label>
+			<form novalidate ng-submit="save()">
 
-					<div class="col-md-10">
-						<input type="text" class="form-control" ng-model="filter.categories" id="filter-categories" disabled />
-					</div>
+				<div class="form-group col-md-12">
 					<div class="col-md-2">
 						<button class="btn btn-default btn-xs pull-left" ng-click="showSelectCategoryForm()">
-							<i class="fa fa-eye"></i></button>
+							<i class="fa fa-tree"></i></button>
 					</div>
+					<div class="col-md-10">categories</div>
 				</div>
+
+				<div class="form-group col-md-12">
+					<div class="col-md-2">
+						<button class="btn btn-default btn-xs pull-left" ng-click="showSelectTagsForm()">
+							<i class="fa fa-tags"></i>
+						</button>
+					</div>
+					<div class="col-md-10">labels tags</div>
+				</div>
+
+				<div class="form-group col-md-12">
+
+					<div class="col-md-2">
+						<button class="btn btn-default btn-xs pull-left" ng-click="enabledOnly()">
+							<i class="fa fa-check"></i>
+						</button>
+					</div>
+					<div class="col-md-3">Enabled</div>
+
+					<div class="col-md-1"></div>
+
+					<div class="col-md-2">
+						<button class="btn btn-default btn-xs pull-left" ng-click="disabledOnly()">
+							<i class="fa fa-check"></i>
+						</button>
+					</div>
+					<div class="col-md-3">Disabled</div>
+
+				</div>
+
 			</form>
 		</div>
 

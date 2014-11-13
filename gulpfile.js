@@ -66,6 +66,7 @@ gulp.task('app.js', function () {
 		sourcePath + 'js/services/http/*.js',
 		sourcePath + 'js/services/*.js',
 		sourcePath + 'js/services/storage/*.js',
+		sourcePath + 'js/directives/*.js',
 		sourcePath + 'js/controllers/*.js',
 		sourcePath + 'js/main.js'
 	];
@@ -98,10 +99,12 @@ gulp.task('watch', function () {
 	var files = [
 		sourcePath + 'js/*.js',
 		sourcePath + 'js/controllers/*.js',
+		sourcePath + 'js/directives/*.js',
 		sourcePath + 'js/extends/*.js',
 		sourcePath + 'js/services/*.js',
 		sourcePath + 'js/services/storage/*.js',
 		sourcePath + 'js/services/http/*.js',
+		sourcePath + 'js/controllers/*.js',
 		sourcePath + 'main.css'
 	];
 	var watcher = gulp.watch(files, ['build-all']);

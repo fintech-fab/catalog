@@ -3,6 +3,8 @@
 namespace FintechFab\Catalog\Controllers;
 
 
+use App;
+use FintechFab\Catalog\Components\ProductSearchComponent;
 use Input;
 use ProductAdmin;
 
@@ -32,6 +34,12 @@ class ProductController extends \Controller
 		return ['errors' => $cat->errors()];
 	}
 
+
+	public function tags()
+	{
+		return ProductAdmin::tagList();
+	}
+
 	public function enable()
 	{
 		ProductAdmin::init(Input::get('id'))->toggleEnable();
@@ -48,7 +56,13 @@ class ProductController extends \Controller
 
 	public function index()
 	{
-		return \Response::json(ProductAdmin::list2Array());
+		/** @var ProductSearchComponent $search */
+		$search = App::make(ProductSearchComponent::class);
+		$result = $search
+			->filterCategories(Input::get('categories'))
+			->paginate(30);
+
+		return \Response::json(ProductAdmin::list2Array($result));
 	}
 
 }

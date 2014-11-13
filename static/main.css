@@ -136,6 +136,8 @@ form div.error {
 #product-list-root ul,
 #product-list-root li {
 	list-style: none;
+	padding: 0;
+	margin: 0;
 }
 
 #product-list-root li div.ng-binding {

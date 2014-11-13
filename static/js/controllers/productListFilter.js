@@ -1,45 +1,62 @@
-AppControllers.productListFilter = ['$scope', '$routeParams', '$modal', 'productFilterStorage', function ($scope, $routeParams, $modal, storage) {
+AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$modal', 'productFilterStorage', 'productServer', function ($scope, $routeParams, $location, $modal, storage, http) {
 
 
 	$scope.fields = [
-		'categories'
+		'categories',
+		'tags'
 	];
 
+	storage.set('tags', $routeParams.tags && $routeParams.tags.split(',') || null);
+	storage.set('categories', $routeParams.categories && $routeParams.categories.split(',') || null);
 
-	$scope.createDefaultFilter = function () {
-		$routeParams.cid && storage.initList('categories', $routeParams.cid);
-	};
-	$scope.createDefaultFilter();
-
-
-	$scope.emitChanged = function () {
-		this.$emit('productListFilterChanged', this.fields);
+	$scope.emitChanged = function (callback) {
+		callback = typeof callback === 'function'? callback : function(){};
+		this.$emit('productListFilterChanged', [this.fields, callback]);
 	};
 	$scope.emitChanged();
 
 
 	$scope.showSelectCategoryForm = function () {
+		$scope.showFilterForm('categories', 'Select a category');
+	};
 
+	$scope.showSelectTagsForm = function () {
+		$scope.showFilterForm('tags', 'Check a tags');
+	};
+
+	$scope.showFilterForm = function(entity, title){
+		$scope.selectListEntity = entity;
 		$scope.modalEditForm = $modal({
-			title: 'Select a category',
-			contentTemplate: 'template/category.select',
-			template: 'template/category.modal_right',
+			title: title,
+			template: 'template/product.select-list-callback',
 			scope: $scope,
 			show: true
 		});
-
 	};
 
-	$scope.$on('modalCategorySelectToggle', function (event, args) {
-		var
-			nodeId = args[0],
-			checked = args[1];
-		storage.replace('categories', nodeId, checked);
-		$scope.emitChanged();
-	});
+	$scope.getCollection = function(name, callback){
+		switch (name){
+			case 'categories':
+				http.loadCategories(callback);
+				break;
+			case 'tags':
+				http.loadTags(callback);
+				break;
+			default:
+				callback(null);
+				break;
+		}
+	};
 
-	$scope.$on('modalCategorySelectLoaded', function (event, list) {
-		storage.setChecked2List('categories', list);
-	});
+	$scope.itemsSelectLoaded = function(name, list){
+		storage.setChecked2List(name, list);
+	};
+
+	$scope.itemsSelectToggle = function(name, id, checked, callback){
+		storage.replace(name, id, checked);
+		$scope.emitChanged(callback);
+	};
+
+
 
 }];

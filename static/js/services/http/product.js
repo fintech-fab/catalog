@@ -4,9 +4,12 @@ AppServices.productServer = function ($http) {
 		$http.post('product/list', params).success(callback);
 	};
 
-
 	this.loadCategories = function (callback) {
 		$http.get('category/tree/simple').success(callback);
+	};
+
+	this.loadTags = function (callback) {
+		$http.get('product/tags').success(callback);
 	};
 
 	this.overlay = function () {
