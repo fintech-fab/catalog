@@ -128,8 +128,9 @@ AppExtends.form = function (params) {
 };
 AppServices.treeServer = function ($http) {
 
-	this.loadTree = function (callback) {
-		$http.get('rest/categories/tree').then(callback);
+	this.loadTree = function () {
+		console.log('treeServer.loadTree');
+		return $http.get('rest/categories/tree');
 	};
 
 	this.removeById = function (id, callback) {
@@ -191,15 +192,20 @@ AppServices.treeServer = function ($http) {
 AppServices.productServer = function ($http) {
 
 	this.loadList = function (params) {
+		console.log('<< reload product list >>');
 		return $http.post('product/list', params);
 	};
 
-	this.loadCategories = function (callback) {
-		$http.get('category/tree/simple').success(callback);
+	this.loadCategories = function () {
+		return $http.get('category/tree/simple');
 	};
 
-	this.loadTags = function (callback) {
-		$http.get('product/tags').success(callback);
+	this.loadTags = function () {
+		return $http.get('product/tags');
+	};
+
+	this.loadTypes = function () {
+		return $http.get('product/types');
 	};
 
 	this.overlay = function () {
@@ -244,14 +250,11 @@ AppServices.treeDragDrop = ['treeServer', function (http) {
 		var id = $this.getSourceModelId();
 
 		var post = {id: id, after: 0, pid: $this.getDestId()};
-
-		$this.getDestChild().forEach(function (value) {
-			if (value.id == id) {
-				return false;
-			}
-			post.after = value.id;
-			return true;
-		});
+		var list = $this.getDestChild();
+		for (var i = 0, qnt = list.length; i < qnt; i++) {
+			if (list[i].id == id) break;
+			post.after = list[i].id;
+		}
 
 		http.dragDropped(
 			post,
@@ -300,11 +303,9 @@ AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', functio
 	this.treeScope = null;
 	this.rootScopeEl = null;
 
-	this.getTree = function (result) {
+	this.getTree = function () {
 		this.clear();
-		http.loadTree(function (res) {
-			result(res.data);
-		});
+		return http.loadTree();
 	};
 
 	this.initCollapse = function (scope) {
@@ -448,7 +449,11 @@ AppServices.productFilterStorage = ['localStorageService', function (storage) {
 
 		get: function (sid) {
 			sid = 'PFS.' + sid;
-			return storage.get(sid);
+			var value = storage.get(sid);
+			if (typeof value === 'number') {
+				value += '';
+			}
+			return value;
 		},
 
 		set: function (sid, value) {
@@ -491,7 +496,7 @@ AppDirectives.selectListCallback = function() {
 		controller: AppControllers.modalItemsSelect
 	};
 };
-AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, node) {
+AppControllers.categoryTreeEdit = ['$route', '$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($route, $scope, http, $modal, treeInit, treeDragDrop, node) {
 
 	$scope.treeOptions = {
 		dropped: treeDragDrop.dropped,
@@ -644,8 +649,8 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.data = [];
-	treeInit.getTree(function (result) {
-		$scope.data = result;
+	treeInit.getTree().then(function (result) {
+		$scope.data = result.data;
 		treeInit.initCollapse($scope);
 		// loadingOverlay it is block html when server request in process
 		http.overlay.set(treeInit.rootScope);
@@ -724,6 +729,8 @@ AppControllers.modalCategoryNew = ['$scope', 'treeServer', 'treeNode', function 
 AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 
 	var $source = $scope.$parent;
+	var back = $source.backSelector;
+	var entity = back.entity();
 
 	$scope.value = '';
 	$scope.selected = false;
@@ -792,41 +799,37 @@ AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 
 	}($scope);
 
-	var entity = $source.selectListEntity;
-
-	$source.getCollection(entity, function (data) {
+	back.collection(entity).success(function (data) {
 		$scope.list.set(data);
-		$source.itemsSelectLoaded(entity, $scope.list.get());
+		back.ready(entity, $scope.list.get());
+	});
+
+	$scope.$on('$productListFilterChangeSource', function () {
+		back.ready(entity, $scope.list.get());
 	});
 
 	$scope.toggleItem = function (id) {
 		var node = this.list.node(id);
 		node.$checked = !node.$checked;
 		this.list.busy();
-		$source
-			.itemsSelectToggle(entity, node.id, node.$checked)
+		back.toggle(entity, node.id, node.$checked)
 			.then(function () {
 				$scope.list.free();
 			});
 	};
 
-
 	$scope.filter = function () {
-
 		if (this.list.isBusy() && this.list.value() !== this.list.search()) {
 			this.list.free();
 			return true;
 		}
-
 		showByTerm(this.list);
-
 		return true;
-
 	};
 
 	function showByTerm(l) {
-		l.busy();
 		var node;
+		l.busy();
 		l.search(l.value());
 		for (var i = 0, qnt = l.get().length; i < qnt; i++) {
 			if (!l.isBusy()) {
@@ -836,21 +839,21 @@ AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 			node = l.get(i);
 			node.$hidden = l.hidden(node.$checked, node.name);
 			if (!node.$hidden) {
-				showByParent(node.parent_id);
+				showByParent(l, node.parent_id);
 			}
 		}
 		l.free();
 		l.search('');
 	}
 
-	function showByParent(id) {
-		var node = $scope.list.node(id);
+	function showByParent(l, id) {
+		var node = l.node(id);
 		if (!node) {
 			return;
 		}
 		node.$hidden = false;
 		if (node.parent_id > 0) {
-			showByParent(node.parent_id)
+			showByParent(l, node.parent_id)
 		}
 	}
 
@@ -858,19 +861,28 @@ AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServer', 'productFilterStorage', function ($scope, $route, $location, http, filter) {
 
 	$scope.data = [];
+	$scope.parseBack = null;
+	$scope.lastUrl = null;
+
 	$scope.load = function (params) {
+
 		params = params || [];
 		var values = filter.post(params);
-		$scope.changeUrl(values);
-		var promise = http.loadList(values);
-		promise.success(function (result) {
-			$scope.data = result.data;
-		});
-		return promise;
+		var changed = $scope.changeUrl(values);
+
+		if (changed) {
+			var promise = http.loadList(values);
+			promise.success(function (result) {
+				$scope.data = result.data;
+			});
+			return promise;
+		}
+
 	};
 
 	$scope.changeUrl = function (values) {
-		var url = $location.path() + '?';
+		var url = $location.path(),
+			delimiter = '?';
 		for (var key in values) {
 			if (!values.hasOwnProperty(key)) {
 				continue;
@@ -878,96 +890,188 @@ AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServe
 			if (!values[key] || (values[key] && values[key].length == 0)) {
 				continue;
 			}
-			url = url + key + '=' + values[key] + '&';
+			if (values[key].length > 300) {
+				throw "too long parameter value";
+			}
+			url = url + delimiter + key + '=' + values[key];
+			delimiter = '&';
 		}
-		$location.url(url, false);
+
+		if (url != $scope.lastUrl) {
+			$location.url(url);
+			$scope.lastUrl = url;
+			return true;
+		}
+		return false;
 	};
 
-	$scope.productListFilterChanged = function (fields) {
+	$scope.productListFilterChanged = function (fields, parseBack) {
+		this.parseBack = parseBack;
 		return $scope.load(fields);
 	};
 
-}];
-AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$modal', 'productFilterStorage', 'productServer', function ($scope, $routeParams, $location, $modal, storage, http) {
+	$scope.$on('$locationChangeSuccess', function () {
 
+		console.log('$locationChangeSuccess');
+		console.log('parseBack: ' + typeof $scope.parseBack);
 
-	$scope.fields = [
-		'categories',
-		'tags'
-	];
-
-	storage.set('tags', $routeParams.tags && $routeParams.tags.split(',') || null);
-	storage.set('categories', $routeParams.categories && $routeParams.categories.split(',') || null);
-
-
-	$scope.emitChanged = function () {
-		return $scope.$parent.productListFilterChanged(this.fields);
-	};
-	$scope.emitChanged();
-
-
-	$scope.showSelectCategoryForm = function () {
-		$scope.showFilterForm('categories', 'Select a category');
-	};
-
-	$scope.showSelectTagsForm = function () {
-		$scope.showFilterForm('tags', 'Check a tags');
-	};
-
-	$scope.showFilterForm = function(entity, title){
-		$scope.selectListEntity = entity;
-		$scope.modalEditForm = $modal({
-			title: title,
-			template: 'template/product.select-list-callback',
-			scope: $scope,
-			show: true
-		});
-	};
-
-	$scope.getCollection = function(name, callback){
-		switch (name){
-			case 'categories':
-				http.loadCategories(callback);
-				break;
-			case 'tags':
-				http.loadTags(callback);
-				break;
-			default:
-				callback(null);
-				break;
+		if (typeof $scope.parseBack === 'function') {
+			console.log('parseBack!');
+			$scope.parseBack($scope.parseUrl());
 		}
+	});
+
+	$scope.parseUrl = function () {
+
+		var hash = $location.url(),
+			parameters = hash.split('?')[1],
+			items = ( parameters && parameters.split('&') ) || [],
+			params = {};
+
+		for (var i = 0, qnt = items.length, part; i < qnt; i++) {
+			part = items[i] && items[i].split('=');
+			if (part) {
+				params[part[0]] = part[1];
+			}
+		}
+
+		return params;
+
 	};
-
-	$scope.itemsSelectLoaded = function(name, list){
-		storage.setChecked2List(name, list);
-	};
-
-	$scope.itemsSelectToggle = function (name, id, checked) {
-		storage.replace(name, id, checked);
-		return $scope.emitChanged();
-	};
-
-
 
 }];
+AppControllers.productListFilter = [
+	'$scope', '$routeParams', '$modal', 'productFilterStorage', 'productServer',
+	function ($scope, $routeParams, $modal, storage, http) {
+
+		$scope.fields = [
+			'categories',
+			'types',
+			'tags',
+			'enabled',
+			'name'
+		];
+
+		$scope.form = {};
+
+		$scope.initParams = function (p) {
+
+			storage.set('tags', p.tags && p.tags.split(',') || null);
+			storage.set('categories', p.categories && p.categories.split(',') || null);
+			storage.set('types', p.types && p.types.split(',') || null);
+			storage.set('enabled', (p.enabled && p.enabled.length == 1) ? p.enabled : '');
+
+			this.form.name = decodeURIComponent(p.name || '');
+			storage.set('name', this.form.name);
+		};
+
+		$scope.emitChanged = function () {
+			return this.$parent.productListFilterChanged(this.fields, this.changeSource);
+		};
+
+		$scope.changeSource = function (p) {
+			$scope.initParams(p);
+			$scope.emitChanged();
+			$scope.$broadcast('$productListFilterChangeSource');
+		};
+
+		$scope.showSelectCategoryForm = function () {
+			$scope.showFilterForm('categories', 'Select a category');
+		};
+
+		$scope.showSelectTagsForm = function () {
+			$scope.showFilterForm('tags', 'Check a labels');
+		};
+
+		$scope.showSelectTypeForm = function () {
+			$scope.showFilterForm('types', 'Check a types');
+		};
+
+		$scope.enabled = function (value) {
+			if (typeof value === 'undefined') {
+				return storage.get('enabled');
+			}
+			var exists = storage.get('enabled');
+			if (value === exists) {
+				value = '';
+			}
+			storage.set('enabled', value);
+			this.emitChanged();
+		};
+
+		$scope.submit = function () {
+			var changed = false;
+			var name = storage.get('name');
+			if (name !== this.form.name) {
+				changed = true;
+				storage.set('name', this.form.name);
+			}
+			if (changed) {
+				this.emitChanged();
+			}
+		};
+
+		$scope.showFilterForm = function (entity, title) {
+			$scope.backSelector.entity(entity);
+			$scope.modalEditForm = $modal({
+				title: title,
+				template: 'template/product.select-list-callback',
+				scope: $scope,
+				show: true
+			});
+			var listener = $scope.$on('modal.hide', function (e) {
+				listener();
+				e.targetScope.$destroy();
+				$scope.modalEditForm.destroy();
+			});
+		};
+
+		$scope.backSelector = function () {
+
+			var entity = null;
+
+			return {
+				entity: function (sid) {
+					if (typeof sid !== 'undefined') {
+						entity = sid;
+					}
+					return entity;
+				},
+				ready: function (sid, list) {
+					storage.setChecked2List(sid, list);
+				},
+				toggle: function (sid, id, checked) {
+					storage.replace(sid, id, checked);
+					return $scope.emitChanged();
+				},
+				collection: function (name) {
+					switch (name) {
+						case 'categories':
+							return http.loadCategories();
+							break;
+						case 'tags':
+							return http.loadTags();
+							break;
+						case 'types':
+							return http.loadTypes();
+							break;
+						default:
+							return null;
+							break;
+					}
+				}
+			}
+
+		}();
+
+		$scope.initParams($routeParams);
+		$scope.emitChanged();
+
+	}];
 (function () {
 	'use strict';
 
 	var App = angular.module('treeApp', ['ui.tree', 'mgcrea.ngStrap', 'cgBusy', 'ngTagsInput', 'LocalStorageModule', 'ngRoute']);
-
-	App.run(['$route', '$rootScope', '$location', function ($route, $rootScope, $location) {
-		var original = $location.url;
-		$location.url = function (path, reload) {
-			if (reload === false) {
-				var lastRoute = $route.current;
-				var un = $rootScope.$on('$locationChangeSuccess', function () {
-					$route.current = lastRoute;
-					un();
-				});
-			}
-			return original.apply($location, [path]);
-		};
-	}]);
 
 	App.config(function ($routeProvider) {
 		$routeProvider.
@@ -977,7 +1081,8 @@ AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$mod
 			}).
 			when('/products', {
 				templateUrl: 'template/product.index',
-				controller: 'productListEdit'
+				controller: 'productListEdit',
+				reloadOnSearch: false
 			}).
 			otherwise({
 				redirectTo: '/'
@@ -996,6 +1101,6 @@ AppControllers.productListFilter = ['$scope', '$routeParams', '$location', '$mod
 	App.controller('categoryTreeEdit', AppControllers.categoryTreeEdit);
 	App.controller('productListEdit', AppControllers.productListEdit);
 	App.controller('productListFilter', AppControllers.productListFilter)
-		.directive('selectListCallback', AppDirectives.selectListCallback );
+		.directive('selectListCallback', AppDirectives.selectListCallback);
 
 })();

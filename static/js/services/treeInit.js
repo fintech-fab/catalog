@@ -4,11 +4,9 @@ AppServices.treeInit = ['treeServer', '$timeout', 'localStorageService', functio
 	this.treeScope = null;
 	this.rootScopeEl = null;
 
-	this.getTree = function (result) {
+	this.getTree = function () {
 		this.clear();
-		http.loadTree(function (res) {
-			result(res.data);
-		});
+		return http.loadTree();
 	};
 
 	this.initCollapse = function (scope) {

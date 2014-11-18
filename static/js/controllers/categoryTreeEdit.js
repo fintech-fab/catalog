@@ -1,4 +1,4 @@
-AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, http, $modal, treeInit, treeDragDrop, node) {
+AppControllers.categoryTreeEdit = ['$route', '$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($route, $scope, http, $modal, treeInit, treeDragDrop, node) {
 
 	$scope.treeOptions = {
 		dropped: treeDragDrop.dropped,
@@ -151,8 +151,8 @@ AppControllers.categoryTreeEdit = ['$scope', 'treeServer', '$modal', 'treeInit',
 	};
 
 	$scope.data = [];
-	treeInit.getTree(function (result) {
-		$scope.data = result;
+	treeInit.getTree().then(function (result) {
+		$scope.data = result.data;
 		treeInit.initCollapse($scope);
 		// loadingOverlay it is block html when server request in process
 		http.overlay.set(treeInit.rootScope);

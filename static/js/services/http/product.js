@@ -1,15 +1,20 @@
 AppServices.productServer = function ($http) {
 
 	this.loadList = function (params) {
+		console.log('<< reload product list >>');
 		return $http.post('product/list', params);
 	};
 
-	this.loadCategories = function (callback) {
-		$http.get('category/tree/simple').success(callback);
+	this.loadCategories = function () {
+		return $http.get('category/tree/simple');
 	};
 
-	this.loadTags = function (callback) {
-		$http.get('product/tags').success(callback);
+	this.loadTags = function () {
+		return $http.get('product/tags');
+	};
+
+	this.loadTypes = function () {
+		return $http.get('product/types');
 	};
 
 	this.overlay = function () {

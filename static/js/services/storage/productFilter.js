@@ -27,7 +27,11 @@ AppServices.productFilterStorage = ['localStorageService', function (storage) {
 
 		get: function (sid) {
 			sid = 'PFS.' + sid;
-			return storage.get(sid);
+			var value = storage.get(sid);
+			if (typeof value === 'number') {
+				value += '';
+			}
+			return value;
 		},
 
 		set: function (sid, value) {

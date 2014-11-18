@@ -1,6 +1,8 @@
 AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 
 	var $source = $scope.$parent;
+	var back = $source.backSelector;
+	var entity = back.entity();
 
 	$scope.value = '';
 	$scope.selected = false;
@@ -69,41 +71,37 @@ AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 
 	}($scope);
 
-	var entity = $source.selectListEntity;
-
-	$source.getCollection(entity, function (data) {
+	back.collection(entity).success(function (data) {
 		$scope.list.set(data);
-		$source.itemsSelectLoaded(entity, $scope.list.get());
+		back.ready(entity, $scope.list.get());
+	});
+
+	$scope.$on('$productListFilterChangeSource', function () {
+		back.ready(entity, $scope.list.get());
 	});
 
 	$scope.toggleItem = function (id) {
 		var node = this.list.node(id);
 		node.$checked = !node.$checked;
 		this.list.busy();
-		$source
-			.itemsSelectToggle(entity, node.id, node.$checked)
+		back.toggle(entity, node.id, node.$checked)
 			.then(function () {
 				$scope.list.free();
 			});
 	};
 
-
 	$scope.filter = function () {
-
 		if (this.list.isBusy() && this.list.value() !== this.list.search()) {
 			this.list.free();
 			return true;
 		}
-
 		showByTerm(this.list);
-
 		return true;
-
 	};
 
 	function showByTerm(l) {
-		l.busy();
 		var node;
+		l.busy();
 		l.search(l.value());
 		for (var i = 0, qnt = l.get().length; i < qnt; i++) {
 			if (!l.isBusy()) {
@@ -113,21 +111,21 @@ AppControllers.modalItemsSelect = ['$scope', function ($scope) {
 			node = l.get(i);
 			node.$hidden = l.hidden(node.$checked, node.name);
 			if (!node.$hidden) {
-				showByParent(node.parent_id);
+				showByParent(l, node.parent_id);
 			}
 		}
 		l.free();
 		l.search('');
 	}
 
-	function showByParent(id) {
-		var node = $scope.list.node(id);
+	function showByParent(l, id) {
+		var node = l.node(id);
 		if (!node) {
 			return;
 		}
 		node.$hidden = false;
 		if (node.parent_id > 0) {
-			showByParent(node.parent_id)
+			showByParent(l, node.parent_id)
 		}
 	}
 

@@ -34,6 +34,7 @@
 	  "ng-tags-input": "*",
 	  "angular-local-storage": "*",
 	  "components-font-awesome": "~4.2.0",
-	  "bootswatch-dist": "3.2.0-yeti"
+	  "bootswatch-dist": "3.2.0-yeti",
+	  "angular-mocks": "~1.3.2"
   }
 }

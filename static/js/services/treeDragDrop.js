@@ -16,14 +16,11 @@ AppServices.treeDragDrop = ['treeServer', function (http) {
 		var id = $this.getSourceModelId();
 
 		var post = {id: id, after: 0, pid: $this.getDestId()};
-
-		$this.getDestChild().forEach(function (value) {
-			if (value.id == id) {
-				return false;
-			}
-			post.after = value.id;
-			return true;
-		});
+		var list = $this.getDestChild();
+		for (var i = 0, qnt = list.length; i < qnt; i++) {
+			if (list[i].id == id) break;
+			post.after = list[i].id;
+		}
 
 		http.dragDropped(
 			post,

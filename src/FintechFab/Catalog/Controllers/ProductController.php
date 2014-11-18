@@ -40,6 +40,11 @@ class ProductController extends \Controller
 		return ProductAdmin::tagList();
 	}
 
+	public function types()
+	{
+		return ProductAdmin::types();
+	}
+
 	public function enable()
 	{
 		ProductAdmin::init(Input::get('id'))->toggleEnable();

@@ -57,7 +57,8 @@ gulp.task('app.js', function () {
 		sourcePath + 'bower_components/ng-tags-input/ng-tags-input.js',
 		sourcePath + 'bower_components/jquery/dist/jquery.js',
 		sourcePath + 'bower_components/bootstrap/dist/js/bootstrap.js',
-		sourcePath + 'bower_components/angular-local-storage/dist/angular-local-storage.js'
+		sourcePath + 'bower_components/angular-local-storage/dist/angular-local-storage.js',
+		sourcePath + 'bower_components/angular-mocks/angular-mocks.js'
 	];
 
 	var appFiles = [
@@ -72,7 +73,7 @@ gulp.task('app.js', function () {
 	];
 
 	gulp.src(srcFiles)
-		.pipe(uglify())
+		//.pipe(uglify())
 		.pipe(concat('src.js'))
 		.pipe(rename({suffix: '.min'}))
 		.pipe(eol("\r\n"))

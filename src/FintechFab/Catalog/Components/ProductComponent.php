@@ -490,7 +490,7 @@ class ProductComponent
 	 */
 	public function tagList()
 	{
-		return $this->tag->get()->all('id', 'name');
+		return $this->tag->get(['id', 'name'])->all();
 	}
 
 	/**

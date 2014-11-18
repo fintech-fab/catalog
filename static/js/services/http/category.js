@@ -1,7 +1,8 @@
 AppServices.treeServer = function ($http) {
 
-	this.loadTree = function (callback) {
-		$http.get('rest/categories/tree').then(callback);
+	this.loadTree = function () {
+		console.log('treeServer.loadTree');
+		return $http.get('rest/categories/tree');
 	};
 
 	this.removeById = function (id, callback) {
