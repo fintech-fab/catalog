@@ -46,7 +46,7 @@ AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServe
 	};
 
 	$scope.productListFilterChanged = function (fields, parseBack) {
-		this.parseBack = parseBack;
+		this.parseBack = parseBack || this.parseBack;
 		return $scope.load(fields);
 	};
 

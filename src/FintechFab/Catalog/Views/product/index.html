@@ -18,6 +18,10 @@
 			<div id="product-list-root">
 				<div cg-busy="loadingOverlay">
 					<ul ng-model="data">
+						<li>
+							<product-filter-list-sorting name="name">Name</product-filter-list-sorting>
+							<product-filter-list-sorting name="type">Type</product-filter-list-sorting>
+						</li>
 						<li ng-repeat="node in data" ng-include="'nodes_renderer.html'"></li>
 					</ul>
 				</div>
@@ -38,7 +42,7 @@
 				<div class="form-group col-md-12">
 					<div class="col-md-2">
 						<button class="btn btn-default btn-xs pull-left" ng-click="showSelectTypeForm()">
-							<i class="fa fa-list"></i></button>
+							<i class="fa fa-code-fork"></i></button>
 					</div>
 					<div class="col-md-10">types</div>
 				</div>
@@ -73,11 +77,36 @@
 				</div>
 
 				<div class="form-group col-md-12">
-					<div class="col-md-10">
-						<input type="text" value="{{form.name}}" ng-model="form.name" class="form-control" placeholder="search by name" />
+					<div class="col-md-12">
+						<label>search by name</label>
 					</div>
-					<div class="col-md-2">
-						<button class="btn btn-default btn-xs pull-left" ng-click="submit()">
+					<div class="col-md-12">
+						<input type="text" value="{{form.name}}" name="name" ng-model="form.name" class="form-control pull-left" style="width: 80%" placeholder="search by name" />
+						<button class="btn btn-default btn-xs pull-right" ng-click="submit()">
+							<i class="fa fa-search"></i>
+						</button>
+					</div>
+				</div>
+
+				<div class="form-group col-md-12">
+					<div class="col-md-12">
+						<label>internal character code</label>
+					</div>
+					<div class="col-md-12">
+						<input type="text" value="{{form.sid}}" name="sid" ng-model="form.sid" class="form-control pull-left" style="width: 80%" placeholder="search by internal code" />
+						<button class="btn btn-default btn-xs pull-right" ng-click="submit()">
+							<i class="fa fa-search"></i>
+						</button>
+					</div>
+				</div>
+
+				<div class="form-group col-md-12">
+					<div class="col-md-12">
+						<label>external character code</label>
+					</div>
+					<div class="col-md-12">
+						<input type="text" value="{{form.code}}" name="code" ng-model="form.code" class="form-control pull-left" style="width: 80%" placeholder="search by external code" />
+						<button class="btn btn-default btn-xs pull-right" ng-click="submit()">
 							<i class="fa fa-search"></i>
 						</button>
 					</div>

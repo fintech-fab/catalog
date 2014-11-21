@@ -30,7 +30,9 @@
 	App.controller('modalCategoryEdit', AppControllers.modalCategoryEdit);
 	App.controller('categoryTreeEdit', AppControllers.categoryTreeEdit);
 	App.controller('productListEdit', AppControllers.productListEdit);
-	App.controller('productListFilter', AppControllers.productListFilter)
-		.directive('selectListCallback', AppDirectives.selectListCallback);
+
+	var ctrl = App.controller('productListFilter', AppControllers.productListFilter);
+	ctrl.directive('selectListCallback', AppDirectives.selectListCallback);
+	ctrl.directive('productFilterListSorting', AppDirectives.productFilterListSorting);
 
 })();

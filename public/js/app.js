@@ -490,6 +490,52 @@ AppServices.productFilterStorage = ['localStorageService', function (storage) {
 
 }];
 
+AppDirectives.productFilterListSorting = ['productFilterStorage', function (storage) {
+	return {
+		restrict: "E",
+		template: '<a href class="btn btn-default btn-xs" ng-click="sorting()">' +
+		'<span ng-transclude></span>' +
+		'<i class="fa sorting-ico" ng-class="{\'fa-caret-up\': sorting(\'asc\'),\'fa-caret-down\': sorting(\'desc\')}"></i>' +
+		'</a>',
+		transclude: true,
+		scope: {},
+		link: function (scope, element, attributes) {
+
+			scope.name = attributes.name;
+			scope.direction = undefined;
+			scope.sorting = function (direction) {
+
+				console.log('asdasdsd');
+
+				var existName = storage.get('sortBy');
+				var existDirection = storage.get('directionBy');
+
+				if (direction) {
+					return scope.name == existName && direction == existDirection;
+				}
+
+				if (existName != scope.name) {
+					scope.direction = undefined;
+				}
+
+				if (!scope.direction) {
+					scope.direction = 'asc';
+				} else if (scope.direction === 'asc') {
+					scope.direction = 'desc';
+				} else if (scope.direction === 'desc') {
+					scope.direction = undefined;
+				}
+
+				storage.set('sortBy', scope.name);
+				storage.set('directionBy', scope.direction);
+				scope.$parent.$broadcast('$productFilterListSortingChange');
+
+
+			};
+
+		}
+	};
+}];
 AppDirectives.selectListCallback = function() {
 	return {
 		templateUrl: 'template/product.selector',
@@ -906,7 +952,7 @@ AppControllers.productListEdit = ['$scope', '$route', '$location', 'productServe
 	};
 
 	$scope.productListFilterChanged = function (fields, parseBack) {
-		this.parseBack = parseBack;
+		this.parseBack = parseBack || this.parseBack;
 		return $scope.load(fields);
 	};
 
@@ -949,7 +995,17 @@ AppControllers.productListFilter = [
 			'types',
 			'tags',
 			'enabled',
-			'name'
+			'name',
+			'sid',
+			'code',
+			'sortBy',
+			'directionBy'
+		];
+
+		$scope.characterFields = [
+			'name',
+			'sid',
+			'code'
 		];
 
 		$scope.form = {};
@@ -960,9 +1016,18 @@ AppControllers.productListFilter = [
 			storage.set('categories', p.categories && p.categories.split(',') || null);
 			storage.set('types', p.types && p.types.split(',') || null);
 			storage.set('enabled', (p.enabled && p.enabled.length == 1) ? p.enabled : '');
+			storage.set('sortBy', p.sortBy);
+			storage.set('directionBy', p.directionBy);
 
-			this.form.name = decodeURIComponent(p.name || '');
-			storage.set('name', this.form.name);
+			this.initCharParams(p);
+		};
+
+		$scope.initCharParams = function (p) {
+			var list = this.characterFields;
+			for (var i = 0, qnt = list.length; i < qnt; i++) {
+				this.form[list[i]] = decodeURIComponent(p[list[i]] || '');
+				storage.set(list[i], this.form[list[i]]);
+			}
 		};
 
 		$scope.emitChanged = function () {
@@ -987,6 +1052,10 @@ AppControllers.productListFilter = [
 			$scope.showFilterForm('types', 'Check a types');
 		};
 
+		$scope.$on('$productFilterListSortingChange', function () {
+			$scope.emitChanged();
+		});
+
 		$scope.enabled = function (value) {
 			if (typeof value === 'undefined') {
 				return storage.get('enabled');
@@ -1001,11 +1070,16 @@ AppControllers.productListFilter = [
 
 		$scope.submit = function () {
 			var changed = false;
-			var name = storage.get('name');
-			if (name !== this.form.name) {
-				changed = true;
-				storage.set('name', this.form.name);
+
+			var list = this.characterFields;
+			for (var i = 0, qnt = list.length; i < qnt; i++) {
+				var item = storage.get(list[i]);
+				if (item !== this.form[list[i]]) {
+					changed = true;
+					storage.set(list[i], this.form[list[i]]);
+				}
 			}
+
 			if (changed) {
 				this.emitChanged();
 			}
@@ -1100,7 +1174,9 @@ AppControllers.productListFilter = [
 	App.controller('modalCategoryEdit', AppControllers.modalCategoryEdit);
 	App.controller('categoryTreeEdit', AppControllers.categoryTreeEdit);
 	App.controller('productListEdit', AppControllers.productListEdit);
-	App.controller('productListFilter', AppControllers.productListFilter)
-		.directive('selectListCallback', AppDirectives.selectListCallback);
+
+	var ctrl = App.controller('productListFilter', AppControllers.productListFilter);
+	ctrl.directive('selectListCallback', AppDirectives.selectListCallback);
+	ctrl.directive('productFilterListSorting', AppDirectives.productFilterListSorting);
 
 })();

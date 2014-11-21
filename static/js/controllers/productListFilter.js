@@ -7,7 +7,17 @@ AppControllers.productListFilter = [
 			'types',
 			'tags',
 			'enabled',
-			'name'
+			'name',
+			'sid',
+			'code',
+			'sortBy',
+			'directionBy'
+		];
+
+		$scope.characterFields = [
+			'name',
+			'sid',
+			'code'
 		];
 
 		$scope.form = {};
@@ -18,9 +28,18 @@ AppControllers.productListFilter = [
 			storage.set('categories', p.categories && p.categories.split(',') || null);
 			storage.set('types', p.types && p.types.split(',') || null);
 			storage.set('enabled', (p.enabled && p.enabled.length == 1) ? p.enabled : '');
+			storage.set('sortBy', p.sortBy);
+			storage.set('directionBy', p.directionBy);
 
-			this.form.name = decodeURIComponent(p.name || '');
-			storage.set('name', this.form.name);
+			this.initCharParams(p);
+		};
+
+		$scope.initCharParams = function (p) {
+			var list = this.characterFields;
+			for (var i = 0, qnt = list.length; i < qnt; i++) {
+				this.form[list[i]] = decodeURIComponent(p[list[i]] || '');
+				storage.set(list[i], this.form[list[i]]);
+			}
 		};
 
 		$scope.emitChanged = function () {
@@ -45,6 +64,10 @@ AppControllers.productListFilter = [
 			$scope.showFilterForm('types', 'Check a types');
 		};
 
+		$scope.$on('$productFilterListSortingChange', function () {
+			$scope.emitChanged();
+		});
+
 		$scope.enabled = function (value) {
 			if (typeof value === 'undefined') {
 				return storage.get('enabled');
@@ -59,11 +82,16 @@ AppControllers.productListFilter = [
 
 		$scope.submit = function () {
 			var changed = false;
-			var name = storage.get('name');
-			if (name !== this.form.name) {
-				changed = true;
-				storage.set('name', this.form.name);
+
+			var list = this.characterFields;
+			for (var i = 0, qnt = list.length; i < qnt; i++) {
+				var item = storage.get(list[i]);
+				if (item !== this.form[list[i]]) {
+					changed = true;
+					storage.set(list[i], this.form[list[i]]);
+				}
 			}
+
 			if (changed) {
 				this.emitChanged();
 			}
