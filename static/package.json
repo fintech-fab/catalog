@@ -1,0 +1,22 @@
+{
+	"name": "FfCatalogTests",
+	"version": "1.0.0",
+	"description": "tests",
+	"main": "index.js",
+	"scripts": {
+		"test": "test"
+	},
+	"keywords": [
+		"tests"
+	],
+	"author": "mikanoz",
+	"license": "ISC",
+	"dependencies": {
+		"istanbul": "^0.3.2",
+		"jasmine-core": "^2.1.2",
+		"karma": "^0.12.25",
+		"karma-chrome-launcher": "^0.1.5",
+		"karma-jasmine": "^0.3.0",
+		"karma-phantomjs-launcher": "^0.1.4"
+	}
+}
