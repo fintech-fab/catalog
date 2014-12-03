@@ -1,10 +1,8 @@
 //*********** IMPORTS *****************
 var gulp = require('gulp');
 var sass = require('gulp-ruby-sass');
-var gutil = require('gulp-util');
 var rename = require("gulp-rename");
 var map = require("map-stream");
-var livereload = require("gulp-livereload");
 var concat = require("gulp-concat");
 var uglify = require('gulp-uglify');
 var watch = require('gulp-watch');
@@ -14,9 +12,6 @@ var eol = require('gulp-eol');
 var sourcePath = './static/';
 var destPath = './public/';
 var prodPath = './../../../public/packages/fintech-fab/catalog/';
-
-console.log(sourcePath);
-console.log(destPath);
 
 gulp.task('app.css', function () {
 
@@ -37,8 +32,6 @@ gulp.task('app.css', function () {
 		.pipe(gulp.dest(destPath + 'css'))
 		.pipe(gulp.dest(prodPath + 'css'));
 
-	console.log('css compiled');
-
 	gulp.src(sourcePath + "bower_components/bootswatch-dist/fonts/**.*")
 		.pipe(eol("\r\n"))
 		.pipe(gulp.dest(destPath + 'fonts'))
@@ -56,6 +49,7 @@ gulp.task('app.js', function () {
 
 	var srcFiles = [
 		sourcePath + 'bower_components/angular/angular.js',
+		sourcePath + 'bower_components/angular-route/angular-route.js',
 		sourcePath + 'bower_components/angular-ui-tree/dist/angular-ui-tree.js',
 		sourcePath + 'bower_components/angular-strap/dist/angular-strap.js',
 		sourcePath + 'bower_components/angular-strap/dist/angular-strap.tpl.js',
@@ -63,18 +57,23 @@ gulp.task('app.js', function () {
 		sourcePath + 'bower_components/ng-tags-input/ng-tags-input.js',
 		sourcePath + 'bower_components/jquery/dist/jquery.js',
 		sourcePath + 'bower_components/bootstrap/dist/js/bootstrap.js',
-		sourcePath + 'bower_components/angular-local-storage/dist/angular-local-storage.js'
+		sourcePath + 'bower_components/angular-local-storage/dist/angular-local-storage.js',
+		sourcePath + 'bower_components/angular-mocks/angular-mocks.js'
 	];
 
 	var appFiles = [
-		sourcePath + 'js/main.js',
-		sourcePath + 'js/helpers/*.js',
+		sourcePath + 'js/define.js',
+		sourcePath + 'js/extends/*.js',
+		sourcePath + 'js/services/http/*.js',
 		sourcePath + 'js/services/*.js',
-		sourcePath + 'js/controllers/*.js'
+		sourcePath + 'js/services/storage/*.js',
+		sourcePath + 'js/directives/*.js',
+		sourcePath + 'js/controllers/*.js',
+		sourcePath + 'js/main.js'
 	];
 
 	gulp.src(srcFiles)
-		.pipe(uglify())
+		//.pipe(uglify())
 		.pipe(concat('src.js'))
 		.pipe(rename({suffix: '.min'}))
 		.pipe(eol("\r\n"))
@@ -86,8 +85,6 @@ gulp.task('app.js', function () {
 		.pipe(eol("\r\n"))
 		.pipe(gulp.dest(destPath + 'js'))
 		.pipe(gulp.dest(prodPath + 'js'));
-
-	console.log('js compiled');
 
 });
 
@@ -103,8 +100,12 @@ gulp.task('watch', function () {
 	var files = [
 		sourcePath + 'js/*.js',
 		sourcePath + 'js/controllers/*.js',
-		sourcePath + 'js/helpers/*.js',
+		sourcePath + 'js/directives/*.js',
+		sourcePath + 'js/extends/*.js',
 		sourcePath + 'js/services/*.js',
+		sourcePath + 'js/services/storage/*.js',
+		sourcePath + 'js/services/http/*.js',
+		sourcePath + 'js/controllers/*.js',
 		sourcePath + 'main.css'
 	];
 	var watcher = gulp.watch(files, ['build-all']);

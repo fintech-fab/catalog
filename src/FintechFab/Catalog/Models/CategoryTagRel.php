@@ -8,7 +8,7 @@ namespace FintechFab\Catalog\Models;
  *
  * @package FintechFab\Catalog\Models
  *
- * @method static categoryTagRel whereCategoryId($id)
+ * @method static CategoryTagRel whereCategoryId($id)
  */
 class CategoryTagRel extends \Eloquent
 {

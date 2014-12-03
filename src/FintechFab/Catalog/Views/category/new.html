@@ -1,5 +1,5 @@
 <div ng-controller="modalCategoryNew" id="modalCategoryNew">
-	<form novalidate class="form-horizontal" name="modalCategoryNew" ng-submit="save(category, 'category-save-btn')">
+	<form novalidate class="form-horizontal" name="modalCategoryNew" ng-submit="save()">
 		<input type="hidden" ng-model="category.token" value="<?php echo csrf_token() ?>" id="category-token">
 		<fieldset>
 			<div class="form-group">
@@ -8,11 +8,13 @@
 				<div class="col-lg-10">
 					<input type="text" class="form-control" ng-model="category.name" id="category-name" />
 				</div>
+
+				<div class="error" ng-model="errors.name" ng-class="{hidden: !errors.name}">{{ errors.name }}</div>
 			</div>
 		</fieldset>
 
 		<div class="form-group">
-			<button class="btn btn-primary pull-right" id="category-save-btn">
+			<button class="btn btn-primary pull-right">
 				Save
 			</button>
 		</div>

@@ -1,4 +1,4 @@
-<div class="container" ng-controller="categoryTreeEdit">
+<div class="container">
 
 	<div class="row">
 		<div class="col-lg-10">
@@ -20,6 +20,7 @@
 					<a class="pull-right btn btn-xs" data-nodrag ng-click="showFormEdit(this)"><span class="fa fa-pencil"></span></a>
 					<a class="pull-right btn btn-xs" data-nodrag ng-click="showFormNewItem(this)" ng-class="{'disabled': node.symlink_id != 0}"><span class="fa fa-plus"></span></a>
 					<a class="pull-right btn btn-xs" data-nodrag ng-click="toggleEnabled(this)" data-trigger="hover" data-placement="top" title="{{ node.enabled? 'disable': 'enable' }}" bs-tooltip><span class="fa" ng-class="{'fa-eye': node.enabled, 'fa-eye-slash': !node.enabled}"></span></a>
+					<a class="pull-right btn btn-xs" data-nodrag ng-class="{'disabled':node.qnt == 0}" href="#/products?categories={{node.id}}"><span class="fa">{{node.qnt}}</span></a>
 					<a class="pull-right btn btn-xs" data-nodrag ng-class="{'hide':node.symlink == 0}" data-placement="top" data-trigger="hover" data-title="{{'[' + node.symlink_id + '] ' + node.symlink}}" bs-tooltip><span class="fa fa-link"></span></a>
 				</div>
 				<ol ui-tree-nodes="" ng-model="node.nodes" ng-class="{hidden: collapsed}">

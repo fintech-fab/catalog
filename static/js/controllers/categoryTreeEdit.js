@@ -1,32 +1,27 @@
-App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($scope, $http, $modal, treeInit, treeDragDrop, treeNode) {
+AppControllers.categoryTreeEdit = ['$route', '$scope', 'treeServer', '$modal', 'treeInit', 'treeDragDrop', 'treeNode', function ($route, $scope, http, $modal, treeInit, treeDragDrop, node) {
 
 	$scope.treeOptions = {
 		dropped: treeDragDrop.dropped,
 		accept: treeDragDrop.accept
 	};
 
+	angular.extend($scope, AppExtends.alerts());
+
 	$scope.removeConfirm = function (scope) {
-		treeNode.init(scope);
-		$('.ff-cat-alert').ffCatAlert(
-			'Remove category [' + treeNode.title + '] confirmation', 'Are your sure?',
-			[
-				{
-					type: 'default',
-					title: 'close'
-				},
-				{
-					type: 'primary',
-					title: 'i\'m sure, remove it',
-					click: function () {
-						$(this).button('loading');
-						$http.post('category/remove', {id: treeNode.model.id}).success(function () {
-							$scope.setTreeAttributes({deleted: true});
-							ffCatApp.alertClose();
-						});
-					}
-				}
-			]
+		node.init(scope);
+		$scope.alertConfirm(
+			'Remove category [' + node.title + '] confirmation',
+			'Are your sure?',
+			'i\'m sure, remove it',
+			function () {
+				$scope.alertBusy();
+				http.removeById(node.id(), function () {
+					$scope.setTreeAttributes({deleted: true});
+					$scope.alertClose();
+				});
+			}
 		);
+
 	};
 
 	$scope.countRootChild = function () {
@@ -42,11 +37,11 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	};
 
 	$scope.setTreeAttributes = function (data) {
-		if (!treeNode.scope) {
+		if (!node.scope) {
 			return;
 		}
-		var $m = treeNode.model;
-		treeNode.scope.safeApply(function () {
+		var $m = node.model;
+		node.scope.safeApply(function () {
 			if (typeof data.name !== 'undefined') {
 				$m.title = data.name;
 				$m.name = data.name;
@@ -76,15 +71,10 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	};
 
 	$scope.toggleEnabled = function (scope) {
-		treeNode.init(scope);
-		treeInit.rootScope().loadingOverlay =
-			$http.post(
-				'category/enable',
-				{id: treeNode.model.id}
-			)
-				.success(function () {
-					$scope.setTreeAttributes({enabled: !treeNode.model.enabled});
-				});
+		node.init(scope);
+		http.enableById(node.id(), function () {
+			$scope.setTreeAttributes({enabled: !node.model.enabled});
+		});
 	};
 
 	$scope.addRootItem = function () {
@@ -92,9 +82,9 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	};
 
 	$scope.showFormNewItem = function (scope) {
-		treeNode.init(scope);
+		node.init(scope);
 		$scope.modalEditForm = $modal({
-			title: 'Add category into: [' + treeNode.title + ']',
+			title: 'Add category into: [' + node.title + ']',
 			contentTemplate: 'template/category.new',
 			template: 'template/category.modal',
 			scope: $scope,
@@ -104,9 +94,9 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	};
 
 	$scope.showFormEdit = function (scope) {
-		treeNode.init(scope);
+		node.init(scope);
 		$scope.modalEditForm = $modal({
-			title: 'Edit category [' + treeNode.title + ']',
+			title: 'Edit category [' + node.title + ']',
 			contentTemplate: 'template/category.edit',
 			template: 'template/category.modal',
 			scope: $scope,
@@ -115,11 +105,11 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	};
 
 	$scope.loadTagItems = function (query) {
-		return $http.get('category/tags/autocomplete?term=' + query);
+		return http.findTags(query);
 	};
 
 	$scope.newSubItem = function (data, extras) {
-		treeNode.model.nodes.push({
+		node.model.nodes.push({
 			id: data.id,
 			title: data.name,
 			name: data.name,
@@ -161,9 +151,11 @@ App.controller('categoryTreeEdit', ['$scope', '$http', '$modal', 'treeInit', 'tr
 	};
 
 	$scope.data = [];
-	treeInit.getTree(function (result) {
-		$scope.data = result;
+	treeInit.getTree().then(function (result) {
+		$scope.data = result.data;
 		treeInit.initCollapse($scope);
+		// loadingOverlay it is block html when server request in process
+		http.overlay.set(treeInit.rootScope);
 	});
 
-}]);
+}];

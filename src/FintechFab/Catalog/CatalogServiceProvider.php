@@ -1,9 +1,17 @@
 <?php namespace FintechFab\Catalog;
 
 use App;
+use FintechFab\Catalog\Commands\ParseHabrCommand;
 use FintechFab\Catalog\Components\CategoryComponent;
+use FintechFab\Catalog\Components\CategorySiteComponent;
+use FintechFab\Catalog\Components\ProductComponent;
 use FintechFab\Catalog\Controllers\CategoryController;
+use FintechFab\Catalog\Controllers\ProductController;
 use FintechFab\Catalog\Exceptions\CategoryException;
+use FintechFab\Catalog\Facades\CategoryAdmin;
+use FintechFab\Catalog\Facades\CategorySite;
+use FintechFab\Catalog\Facades\ProductAdmin;
+use Illuminate\Foundation\AliasLoader;
 use Illuminate\Support\ServiceProvider;
 use Route;
 use View;
@@ -54,10 +62,27 @@ class CatalogServiceProvider extends ServiceProvider
 			);
 		});
 
-		App::bind('ff.category.admin', function()
-		{
+        App::bind('ff.category.admin', function () {
 			return App::make(CategoryComponent::class);
 		});
+        App::bind('ff.product.admin', function () {
+            return App::make(ProductComponent::class);
+        });
+        App::bind('ff.category.site', function () {
+            return App::make(CategorySiteComponent::class);
+        });
+
+        AliasLoader::getInstance([
+            'CategoryAdmin' => CategoryAdmin::class,
+            'ProductAdmin'  => ProductAdmin::class,
+            'CategorySite'  => CategorySite::class,
+        ]);
+
+        $this->app['command.ff-cat.habr-parser'] = $this->app->share(function () {
+            return new ParseHabrCommand();
+        });
+        $this->commands('command.ff-cat.habr-parser');
+
 	}
 
 	/**
@@ -72,6 +97,14 @@ class CatalogServiceProvider extends ServiceProvider
 
 	private function routes()
 	{
+        Route::group(array('prefix' => 'ff-cat/product',), function () {
+            Route::post('/list', ProductController::class . '@index');
+            Route::get('/tags', ProductController::class . '@tags');
+            Route::get('/types', ProductController::class . '@types');
+            Route::post('/enable', ProductController::class . '@enable');
+            Route::post('/remove', ProductController::class . '@remove');
+        });
+
 		Route::group(array('prefix' => 'ff-cat',), function () {
 
 			Route::get('/', [
@@ -99,10 +132,6 @@ class CatalogServiceProvider extends ServiceProvider
 				'uses' => CategoryController::class . '@createSymlink',
 			]);
 
-			Route::get('/category/tree', [
-				'as'   => 'ff.cat.category.tree',
-				'uses' => CategoryController::class . '@tree',
-			]);
 
 			Route::get('/category/edit/{id?}', [
 				'as'   => 'ff.cat.category.edit',
@@ -150,9 +179,8 @@ class CatalogServiceProvider extends ServiceProvider
 			]);
 
 
-			Route::get('/template/{tpl}', [
-				'uses' => CategoryController::class . '@template',
-			]);
+            Route::get('/category/tree/simple', CategoryController::class . '@treeSimple');
+            Route::get('/template/{tpl}', CategoryController::class . '@template');
 
 		});
 

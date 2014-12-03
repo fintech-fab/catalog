@@ -1,24 +1,23 @@
-App.controller('modalCategoryNew', ['$scope', '$http', 'treeNode', function ($scope, $http, treeNode) {
+AppControllers.modalCategoryNew = ['$scope', 'treeServer', 'treeNode', function ($scope, http, node) {
 
 	$scope.category = {};
+	angular.extend($scope, AppExtends.form({
+		id: 'modalCategoryNew',
+		model: 'category'
+	}));
 
-	$scope.save = function (category, btn) {
-		ffCatApp.buttonLock(btn);
-		category = (typeof category == 'undefined') ? {} : category;
-		category._token = $('#category-token').val();
-		category.parent_id = treeNode.model.id;
-		$http.post(
-			'category/create',
-			category
-		)
-			.success(function (res) {
-				if (!ffCatApp.showErrors(res, 'modalCategoryNew', 'category')) {
-					treeNode.getScope().newSubItem(res.category, res.extras);
-					$scope.category = {};
-				}
-				ffCatApp.buttonUnlock(btn);
-			});
+	$scope.save = function () {
+		$scope.button().loading();
+		$scope.category.parent_id = node.id();
+
+		http.createCategory($scope.category, function (res) {
+			if (!$scope.showErrors(res)) {
+				node.newSubItem(res.category, res.extras);
+				$scope.cleanup();
+			}
+			$scope.button().reset();
+		});
 
 	};
 
-}]);
+}];

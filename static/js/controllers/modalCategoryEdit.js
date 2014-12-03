@@ -1,24 +1,29 @@
-App.controller('modalCategoryEdit', ['$scope', '$http', 'treeNode', function ($scope, $http, treeNode) {
+AppControllers.modalCategoryEdit = ['$scope', 'treeServer', 'treeNode', function ($scope, http, node) {
 
-	$http.get('rest/categories/item/' + treeNode.model.id)
-		.then(function (res) {
-			$scope.doUpdate(res.data);
+	$scope.category = {};
+
+	angular.extend($scope, AppExtends.form({
+		id: 'modalCategoryEdit',
+		model: 'category'
+	}));
+
+	$scope.button().loading();
+	http.getById(node.id(), function (res) {
+		$scope.doUpdate(res.data);
+		$scope.button().reset();
+	});
+
+	$scope.save = function () {
+		$scope.button().loading();
+		$scope.token();
+
+		http.updateCategory(node.id(), $scope.category, function (res) {
+			if (!$scope.showErrors(res)) {
+				$scope.doUpdate(res);
+			}
+			$scope.button().reset();
 		});
 
-	$scope.save = function (category, btn) {
-		ffCatApp.buttonLock(btn);
-		category = (typeof category == 'undefined') ? {} : category;
-		category._token = $('#category-token').val();
-		$http.post(
-			'category/update/' + $scope.category.id,
-			category
-		)
-			.success(function (res) {
-				if (!ffCatApp.showErrors(res, 'modalCategoryEdit', 'category')) {
-					$scope.doUpdate(res);
-				}
-				ffCatApp.buttonUnlock(btn);
-			});
 	};
 
 	$scope.doUpdate = function (res) {
@@ -32,8 +37,8 @@ App.controller('modalCategoryEdit', ['$scope', '$http', 'treeNode', function ($s
 		data.symlink = res.extras.symlink;
 		data.category_type_id = res.extras.category_type_id;
 		data.type = res.extras.type;
-		treeNode.scope.setTreeAttributes(data);
+		node.apply(data);
 
 	};
 
-}]);
+}];
